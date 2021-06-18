@@ -4,7 +4,8 @@
 
 ```ts
 
-import { TokenCredential } from '@azure/identity';
+import { AbortSignal } from 'node-abort-controller';
+import { TokenCredential } from '@azure/core-auth';
 
 // @public (undocumented)
 export interface Agent {
@@ -31,6 +32,12 @@ export const BulkOperationType: {
     readonly Delete: "Delete";
     readonly Replace: "Replace";
 };
+
+// @public
+export interface BulkOptions {
+    // (undocumented)
+    continueOnError?: boolean;
+}
 
 // @public
 export class ChangeFeedIterator<T> {
@@ -65,11 +72,12 @@ export class ChangeFeedResponse<T> {
 export class ClientContext {
     constructor(cosmosClientOptions: CosmosClientOptions, globalEndpointManager: GlobalEndpointManager);
     // (undocumented)
-    bulk<T>({ body, path, resourceId, partitionKeyRangeId, options }: {
+    bulk<T>({ body, path, partitionKeyRangeId, resourceId, bulkOptions, options }: {
         body: T;
         path: string;
         partitionKeyRangeId: string;
         resourceId: string;
+        bulkOptions?: BulkOptions;
         options?: RequestOptions;
     }): Promise<Response<any>>;
     // (undocumented)
@@ -166,7 +174,7 @@ export class ClientSideMetrics {
 
 // @public
 export class Conflict {
-    constructor(container: Container, id: string, clientContext: ClientContext);
+    constructor(container: Container, id: string, clientContext: ClientContext, partitionKey?: PartitionKey);
     // (undocumented)
     readonly container: Container;
     delete(options?: RequestOptions): Promise<ConflictResponse>;
@@ -352,6 +360,7 @@ export const Constants: {
         ALLOW_MULTIPLE_WRITES: string;
         IsBatchRequest: string;
         IsBatchAtomic: string;
+        BatchContinueOnError: string;
         ForceRefresh: string;
     };
     WritableLocations: string;
@@ -367,6 +376,7 @@ export const Constants: {
         CollectionSize: string;
     };
     Path: {
+        Root: string;
         DatabasesPathSegment: string;
         CollectionsPathSegment: string;
         UsersPathSegment: string;
@@ -398,7 +408,7 @@ export const Constants: {
 // @public
 export class Container {
     constructor(database: Database, id: string, clientContext: ClientContext);
-    conflict(id: string): Conflict;
+    conflict(id: string, partitionKey?: PartitionKey): Conflict;
     get conflicts(): Conflicts;
     // (undocumented)
     readonly database: Database;
@@ -829,7 +839,7 @@ export class ItemResponse<T extends ItemDefinition> extends ResourceResponse<T &
 // @public
 export class Items {
     constructor(container: Container, clientContext: ClientContext);
-    bulk(operations: OperationInput[], options?: RequestOptions): Promise<OperationResponse[]>;
+    bulk(operations: OperationInput[], bulkOptions?: BulkOptions, options?: RequestOptions): Promise<OperationResponse[]>;
     changeFeed(partitionKey: string | number | boolean, changeFeedOptions?: ChangeFeedOptions): ChangeFeedIterator<any>;
     changeFeed(changeFeedOptions?: ChangeFeedOptions): ChangeFeedIterator<any>;
     changeFeed<T>(partitionKey: string | number | boolean, changeFeedOptions?: ChangeFeedOptions): ChangeFeedIterator<T>;
@@ -1535,6 +1545,8 @@ export interface StatusCodesType {
     Conflict: 409;
     // (undocumented)
     Created: 201;
+    // (undocumented)
+    ENOTFOUND: "ENOTFOUND";
     // (undocumented)
     Forbidden: 403;
     // (undocumented)

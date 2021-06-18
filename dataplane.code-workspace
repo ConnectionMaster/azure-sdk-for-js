@@ -5,6 +5,10 @@
       "path": "sdk/core/abort-controller"
     },
     {
+      "name": "purview-catalog",
+      "path": "sdk/purview/purview-catalog-rest"
+    },
+    {
       "name": "anomaly-detector",
       "path": "sdk/anomalydetector/ai-anomaly-detector"
     },
@@ -33,6 +37,10 @@
       "path": "sdk/communication/communication-sms"
     },
     {
+      "name": "container-registry",
+      "path": "sdk/containerregistry/container-registry"
+    },
+    {
       "name": "core-amqp",
       "path": "sdk/core/core-amqp"
     },
@@ -49,6 +57,22 @@
       "path": "sdk/core/core-client"
     },
     {
+      "name": "core-client-rest",
+      "path": "sdk/core/core-client-rest"
+    },
+    {
+      "name": "ai-document-translator",
+      "path": "sdk/documenttranslator/ai-document-translator-rest"
+    },
+    {
+      "name": "confidential-ledger",
+      "path": "sdk/confidentialledger/confidential-ledger-rest"
+    },
+    {
+      "name": "agrifood-farming",
+      "path": "sdk/agrifood/agrifood-farming-rest"
+    },
+    {
       "name": "core-crypto",
       "path": "sdk/core/core-crypto"
     },
@@ -57,8 +81,8 @@
       "path": "sdk/core/core-http"
     },
     {
-      "name": "core-https",
-      "path": "sdk/core/core-https"
+      "name": "core-rest-pipeline",
+      "path": "sdk/core/core-rest-pipeline"
     },
     {
       "name": "core-lro",
@@ -103,10 +127,6 @@
     {
       "name": "form-recognizer",
       "path": "sdk/formrecognizer/ai-form-recognizer"
-    },
-    {
-      "name": "testhub",
-      "path": "sdk/eventhub/testhub"
     },
     {
       "name": "identity",
@@ -225,6 +245,10 @@
       "path": "common/tools/dev-tool"
     },
     {
+      "name": "purview-scanning",
+      "path": "sdk/purview/purview-scanning-rest"
+    },
+    {
       "name": "perfstress",
       "path": "sdk/test-utils/perfstress"
     },
@@ -243,6 +267,10 @@
     {
       "name": "attestation",
       "path": "sdk/attestation/attestation"
+    },
+    {
+      "name": "iot-device-update",
+      "path": "sdk/deviceupdate/iot-device-update"
     }
   ],
   "settings": {
@@ -261,6 +289,7 @@
       "**/*.map": true,
       "**/dist-*/*": true,
       "**/test-dist/*": true,
+      "**/dist-test/*": true,
       "**/node_modules": true,
       "**/bower_components": true,
       "**/*.code-search": true,

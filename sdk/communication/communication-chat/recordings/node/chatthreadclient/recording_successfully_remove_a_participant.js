@@ -1,23 +1,25 @@
 let nock = require('nock');
 
-module.exports.hash = "17a09e59e6cb1c9e41aa571d96b978d0";
+module.exports.hash = "95d8e7f0df4d2e1894f7edb044ad665a";
 
 module.exports.testInfo = {"uniqueName":{},"newDate":{}}
 
 nock('https://endpoint', {"encodedQueryParams":true})
-  .delete('/chat/threads/19%3Ad1799fdf7b8b4f5e96675f30c01296e1%40thread.v2/participants/8%3Aacs%3A46849534-eb08-4ab7-bde7-c36928cd1547_00000008-0e96-ae51-b0b7-3a3a0d0000a9')
+  .post('/chat/threads/19%3A-SU2gzDrzE720bWocJYfAkee6As1QmtdJW3bcNJWyEw1%40thread.v2/participants/:remove', {"communicationUser":{"id":"8:acs:1b5cc06b-f352-4571-b1e6-d9b259b7c776_00000009-fc8d-d72a-2e7c-5b3a0d000545"}})
   .query(true)
   .reply(204, "", [
   'MS-CV',
-  'vxfBqcOThkWv5HQ4xvW0kA.0',
+  'FHJ9scyN40qbY7tkMBwBQQ.0',
   'Strict-Transport-Security',
   'max-age=2592000',
   'api-supported-versions',
-  '2020-11-01-preview3, 2021-01-27-preview4',
+  '2020-11-01-preview3, 2021-01-27-preview4, 2021-03-01-preview5, 2021-03-07, 2021-04-05-preview6',
   'X-Processing-Time',
-  '484ms',
+  '436ms',
+  'X-Cache',
+  'CONFIG_NOCACHE',
   'X-Azure-Ref',
-  '0VFccYAAAAAB3VGUMcYK8TZtGdbt2qx3IWVZSMzBFREdFMDMwOQBjYzkyNzU4ZC0wNWY3LTRhZDYtYWE1ZS0wZmE5NzE4ZDg5ODU=',
+  '02suaYAAAAADz+9xCRMTKQrymORUjTFl/V1NURURHRTA4MTkANzA1NDM5NWUtY2UxZC00NTVlLWFlNWQtMjMzY2E4MzkwNTU0',
   'Date',
-  'Thu, 04 Feb 2021 20:21:40 GMT'
+  'Tue, 11 May 2021 18:24:26 GMT'
 ]);

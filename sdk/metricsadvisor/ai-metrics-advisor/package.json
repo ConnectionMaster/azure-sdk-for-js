@@ -3,7 +3,7 @@
   "sdk-type": "client",
   "author": "Microsoft Corporation",
   "description": "An isomorphic client library for the Azure Metrics Advisor service.",
-  "version": "1.0.0-beta.4",
+  "version": "1.0.0",
   "keywords": [
     "node",
     "azure",
@@ -42,6 +42,10 @@
       {
         "path": "src/constants.ts",
         "prefix": "SDK_VERSION"
+      },
+      {
+        "path": "swagger/README.md",
+        "prefix": "package-version"
       }
     ]
   },
@@ -50,16 +54,16 @@
     "build:autorest": "autorest ./swagger/README.md --typescript --version=3.0.6267",
     "build:browser": "tsc -p . && cross-env ONLY_BROWSER=true rollup -c 2>&1",
     "build:node": "tsc -p . && cross-env ONLY_NODE=true rollup -c 2>&1",
-    "build:samples": "dev-tool samples prep && cd dist-samples && tsc -p .",
+    "build:samples": "echo Obsolete.",
     "build:test": "tsc -p . && rollup -c 2>&1",
     "build": "tsc -p . && rollup -c 2>&1 && api-extractor run --local",
-    "check-format": "prettier --list-different --config ../../../.prettierrc.json --ignore-path ../../../.prettierignore \"src/**/*.ts\" \"test/**/*.ts\" \"*.{js,json}\"",
-    "clean": "rimraf dist dist-esm dist-browser dist-test test-browser temp types *.tgz *.log",
-    "execute:samples": "npm run build:samples && dev-tool samples run samples/javascript/ && dev-tool samples run dist-samples/typescript/dist/dist-samples/typescript/src/",
+    "check-format": "prettier --list-different --config ../../../.prettierrc.json --ignore-path ../../../.prettierignore \"src/**/*.ts\" \"test/**/*.ts\" \"samples-dev/**/*.ts\" \"*.{js,json}\"",
+    "clean": "rimraf dist dist-esm dist-browser dist-test dist-test temp types *.tgz *.log",
+    "execute:samples": "dev-tool samples run samples-dev",
     "extract-api": "tsc -p . && api-extractor run --local",
-    "format": "prettier --write --config ../../../.prettierrc.json --ignore-path ../../../.prettierignore \"src/**/*.ts\" \"test/**/*.ts\" \"*.{js,json}\"",
+    "format": "prettier --write --config ../../../.prettierrc.json --ignore-path ../../../.prettierignore \"src/**/*.ts\" \"test/**/*.ts\" \"samples-dev/**/*.ts\" \"*.{js,json}\"",
     "integration-test:browser": "karma start --single-run",
-    "integration-test:node": "nyc mocha -r esm --require source-map-support/register --reporter ../../../common/tools/mocha-multi-reporter.js --full-trace -t 300000  dist-esm/test/internal/*.spec.js dist-esm/test/public/*.spec.js dist-esm/test/public/node/*.spec.js dist-esm/test/internal/node/*.spec.js",
+    "integration-test:node": "nyc mocha -r esm --require source-map-support/register --reporter ../../../common/tools/mocha-multi-reporter.js --full-trace -t 300000  \"dist-esm/test/internal/*.spec.js\" \"dist-esm/test/public/*.spec.js\" \"dist-esm/test/public/node/*.spec.js\" \"dist-esm/test/internal/node/*.spec.js\"",
     "integration-test": "npm run integration-test:node && npm run integration-test:browser",
     "lint:fix": "eslint package.json api-extractor.json src test --ext .ts --fix --fix-type [problem,suggestion]",
     "lint": "eslint package.json api-extractor.json src test --ext .ts",
@@ -77,14 +81,13 @@
   "autoPublish": false,
   "prettier": "@azure/eslint-plugin-azure-sdk/prettier.json",
   "dependencies": {
-    "@azure/core-auth": "^1.2.0",
+    "@azure/core-auth": "^1.3.0",
     "@azure/core-lro": "^1.0.2",
     "@azure/core-paging": "^1.1.1",
     "@azure/core-http": "^1.2.0",
-    "@azure/core-tracing": "1.0.0-beta.1",
+    "@azure/core-tracing": "1.0.0-preview.11",
     "@azure/logger": "^1.0.0",
-    "@opentelemetry/api": "^0.10.2",
-    "tslib": "^2.0.0"
+    "tslib": "^2.2.0"
   },
   "devDependencies": {
     "@azure/dev-tool": "^1.0.0",
@@ -101,7 +104,7 @@
     "cross-env": "^7.0.2",
     "dotenv": "^8.2.0",
     "eslint": "^7.15.0",
-    "karma": "^5.1.0",
+    "karma": "^6.2.0",
     "karma-chrome-launcher": "^3.0.0",
     "karma-coverage": "^2.0.0",
     "karma-edge-launcher": "^0.4.2",
@@ -121,9 +124,9 @@
     "rimraf": "^3.0.0",
     "rollup": "^1.16.3",
     "sinon": "^9.0.2",
-    "ts-node": "^8.3.0",
+    "ts-node": "^9.0.0",
     "source-map-support": "^0.5.9",
-    "typescript": "4.1.2",
+    "typescript": "~4.2.0",
     "typedoc": "0.15.2"
   },
   "//sampleConfiguration": {
@@ -138,6 +141,18 @@
       "metricQueries.js",
       "quickstart.js",
       "seriesData.js"
-    ]
+    ],
+    "productName": "Azure Metrics Advisor",
+    "productSlugs": [
+      "azure",
+      "azure-cognitive-services",
+      "azure-metrics-advisor"
+    ],
+    "requiredResources": {
+      "Azure Cognitive Services account": "https://docs.microsoft.com/azure/cognitive-services/cognitive-services-apis-create-account"
+    },
+    "skipFolder": false,
+    "disableDocsMs": false,
+    "apiRefLink": "https://docs.microsoft.com/javascript/api/@azure/ai-metrics-advisor/"
   }
 }

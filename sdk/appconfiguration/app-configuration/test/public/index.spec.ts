@@ -12,19 +12,19 @@ import {
   startRecorder
 } from "./utils/testHelpers";
 import { AppConfigurationClient, ConfigurationSetting, ConfigurationSettingParam } from "../../src";
-import { delay } from "@azure/core-http";
-import { Recorder } from "@azure/test-utils-recorder";
+import { Recorder, delay } from "@azure/test-utils-recorder";
+import { Context } from "mocha";
 
 describe("AppConfigurationClient", () => {
   let client: AppConfigurationClient;
   let recorder: Recorder;
 
-  beforeEach(function() {
+  beforeEach(function(this: Context) {
     recorder = startRecorder(this);
     client = createAppConfigurationClientForTests() || this.skip();
   });
 
-  afterEach(async function() {
+  afterEach(async function(this: Context) {
     await recorder.stop();
   });
 
@@ -420,7 +420,6 @@ describe("AppConfigurationClient", () => {
       });
 
       await delay(1000);
-
       await client.setConfigurationSetting({
         key,
         value: "value2"

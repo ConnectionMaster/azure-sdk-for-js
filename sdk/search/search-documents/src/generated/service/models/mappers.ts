@@ -933,6 +933,13 @@ export const SearchIndexerSkillset: coreHttp.CompositeMapper = {
           className: "CognitiveServicesAccount"
         }
       },
+      knowledgeStore: {
+        serializedName: "knowledgeStore",
+        type: {
+          name: "Composite",
+          className: "SearchIndexerKnowledgeStore"
+        }
+      },
       etag: {
         serializedName: "@odata\\.etag",
         type: {
@@ -1098,6 +1105,125 @@ export const CognitiveServicesAccount: coreHttp.CompositeMapper = {
         serializedName: "description",
         type: {
           name: "String"
+        }
+      }
+    }
+  }
+};
+
+export const SearchIndexerKnowledgeStore: coreHttp.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SearchIndexerKnowledgeStore",
+    modelProperties: {
+      storageConnectionString: {
+        serializedName: "storageConnectionString",
+        required: true,
+        type: {
+          name: "String"
+        }
+      },
+      projections: {
+        serializedName: "projections",
+        required: true,
+        type: {
+          name: "Sequence",
+          element: {
+            type: {
+              name: "Composite",
+              className: "SearchIndexerKnowledgeStoreProjection"
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
+export const SearchIndexerKnowledgeStoreProjection: coreHttp.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SearchIndexerKnowledgeStoreProjection",
+    modelProperties: {
+      tables: {
+        serializedName: "tables",
+        type: {
+          name: "Sequence",
+          element: {
+            type: {
+              name: "Composite",
+              className: "SearchIndexerKnowledgeStoreTableProjectionSelector"
+            }
+          }
+        }
+      },
+      objects: {
+        serializedName: "objects",
+        type: {
+          name: "Sequence",
+          element: {
+            type: {
+              name: "Composite",
+              className: "SearchIndexerKnowledgeStoreObjectProjectionSelector"
+            }
+          }
+        }
+      },
+      files: {
+        serializedName: "files",
+        type: {
+          name: "Sequence",
+          element: {
+            type: {
+              name: "Composite",
+              className: "SearchIndexerKnowledgeStoreFileProjectionSelector"
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
+export const SearchIndexerKnowledgeStoreProjectionSelector: coreHttp.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SearchIndexerKnowledgeStoreProjectionSelector",
+    modelProperties: {
+      referenceKeyName: {
+        serializedName: "referenceKeyName",
+        type: {
+          name: "String"
+        }
+      },
+      generatedKeyName: {
+        serializedName: "generatedKeyName",
+        type: {
+          name: "String"
+        }
+      },
+      source: {
+        serializedName: "source",
+        type: {
+          name: "String"
+        }
+      },
+      sourceContext: {
+        serializedName: "sourceContext",
+        type: {
+          name: "String"
+        }
+      },
+      inputs: {
+        serializedName: "inputs",
+        type: {
+          name: "Sequence",
+          element: {
+            type: {
+              name: "Composite",
+              className: "InputFieldMappingEntry"
+            }
+          }
         }
       }
     }
@@ -1304,6 +1430,18 @@ export const SearchIndex: coreHttp.CompositeMapper = {
           }
         }
       },
+      normalizers: {
+        serializedName: "normalizers",
+        type: {
+          name: "Sequence",
+          element: {
+            type: {
+              name: "Composite",
+              className: "LexicalNormalizer"
+            }
+          }
+        }
+      },
       encryptionKey: {
         serializedName: "encryptionKey",
         type: {
@@ -1399,6 +1537,13 @@ export const SearchField: coreHttp.CompositeMapper = {
       },
       indexAnalyzer: {
         serializedName: "indexAnalyzer",
+        nullable: true,
+        type: {
+          name: "String"
+        }
+      },
+      normalizer: {
+        serializedName: "normalizer",
         nullable: true,
         type: {
           name: "String"
@@ -1557,6 +1702,7 @@ export const CorsOptions: coreHttp.CompositeMapper = {
       },
       maxAgeInSeconds: {
         serializedName: "maxAgeInSeconds",
+        nullable: true,
         type: {
           name: "Number"
         }
@@ -1690,6 +1836,34 @@ export const CharFilter: coreHttp.CompositeMapper = {
     name: "Composite",
     className: "CharFilter",
     uberParent: "CharFilter",
+    polymorphicDiscriminator: {
+      serializedName: "@odata\\.type",
+      clientName: "@odata\\.type"
+    },
+    modelProperties: {
+      odatatype: {
+        serializedName: "@odata\\.type",
+        required: true,
+        type: {
+          name: "String"
+        }
+      },
+      name: {
+        serializedName: "name",
+        required: true,
+        type: {
+          name: "String"
+        }
+      }
+    }
+  }
+};
+
+export const LexicalNormalizer: coreHttp.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "LexicalNormalizer",
+    uberParent: "LexicalNormalizer",
     polymorphicDiscriminator: {
       serializedName: "@odata\\.type",
       clientName: "@odata\\.type"
@@ -1964,6 +2138,13 @@ export const ServiceCounters: coreHttp.CompositeMapper = {
           name: "Composite",
           className: "ResourceCounter"
         }
+      },
+      skillsetCounter: {
+        serializedName: "skillsetCount",
+        type: {
+          name: "Composite",
+          className: "ResourceCounter"
+        }
       }
     }
   }
@@ -2113,6 +2294,142 @@ export const TagScoringParameters: coreHttp.CompositeMapper = {
   }
 };
 
+export const CustomEntity: coreHttp.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "CustomEntity",
+    modelProperties: {
+      name: {
+        serializedName: "name",
+        required: true,
+        type: {
+          name: "String"
+        }
+      },
+      description: {
+        serializedName: "description",
+        nullable: true,
+        type: {
+          name: "String"
+        }
+      },
+      type: {
+        serializedName: "type",
+        nullable: true,
+        type: {
+          name: "String"
+        }
+      },
+      subtype: {
+        serializedName: "subtype",
+        nullable: true,
+        type: {
+          name: "String"
+        }
+      },
+      id: {
+        serializedName: "id",
+        nullable: true,
+        type: {
+          name: "String"
+        }
+      },
+      caseSensitive: {
+        serializedName: "caseSensitive",
+        nullable: true,
+        type: {
+          name: "Boolean"
+        }
+      },
+      accentSensitive: {
+        serializedName: "accentSensitive",
+        nullable: true,
+        type: {
+          name: "Boolean"
+        }
+      },
+      fuzzyEditDistance: {
+        serializedName: "fuzzyEditDistance",
+        nullable: true,
+        type: {
+          name: "Number"
+        }
+      },
+      defaultCaseSensitive: {
+        serializedName: "defaultCaseSensitive",
+        nullable: true,
+        type: {
+          name: "Boolean"
+        }
+      },
+      defaultAccentSensitive: {
+        serializedName: "defaultAccentSensitive",
+        nullable: true,
+        type: {
+          name: "Boolean"
+        }
+      },
+      defaultFuzzyEditDistance: {
+        serializedName: "defaultFuzzyEditDistance",
+        nullable: true,
+        type: {
+          name: "Number"
+        }
+      },
+      aliases: {
+        serializedName: "aliases",
+        nullable: true,
+        type: {
+          name: "Sequence",
+          element: {
+            type: {
+              name: "Composite",
+              className: "CustomEntityAlias"
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
+export const CustomEntityAlias: coreHttp.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "CustomEntityAlias",
+    modelProperties: {
+      text: {
+        serializedName: "text",
+        required: true,
+        type: {
+          name: "String"
+        }
+      },
+      caseSensitive: {
+        serializedName: "caseSensitive",
+        nullable: true,
+        type: {
+          name: "Boolean"
+        }
+      },
+      accentSensitive: {
+        serializedName: "accentSensitive",
+        nullable: true,
+        type: {
+          name: "Boolean"
+        }
+      },
+      fuzzyEditDistance: {
+        serializedName: "fuzzyEditDistance",
+        nullable: true,
+        type: {
+          name: "Number"
+        }
+      }
+    }
+  }
+};
+
 export const HighWaterMarkChangeDetectionPolicy: coreHttp.CompositeMapper = {
   serializedName: "#Microsoft.Azure.Search.HighWaterMarkChangeDetectionPolicy",
   type: {
@@ -2209,6 +2526,13 @@ export const KeyPhraseExtractionSkill: coreHttp.CompositeMapper = {
         type: {
           name: "Number"
         }
+      },
+      modelVersion: {
+        serializedName: "modelVersion",
+        nullable: true,
+        type: {
+          name: "String"
+        }
       }
     }
   }
@@ -2288,7 +2612,21 @@ export const LanguageDetectionSkill: coreHttp.CompositeMapper = {
     uberParent: "SearchIndexerSkill",
     polymorphicDiscriminator: SearchIndexerSkill.type.polymorphicDiscriminator,
     modelProperties: {
-      ...SearchIndexerSkill.type.modelProperties
+      ...SearchIndexerSkill.type.modelProperties,
+      defaultCountryHint: {
+        serializedName: "defaultCountryHint",
+        nullable: true,
+        type: {
+          name: "String"
+        }
+      },
+      modelVersion: {
+        serializedName: "modelVersion",
+        nullable: true,
+        type: {
+          name: "String"
+        }
+      }
     }
   }
 };
@@ -2428,6 +2766,67 @@ export const SplitSkill: coreHttp.CompositeMapper = {
   }
 };
 
+export const CustomEntityLookupSkill: coreHttp.CompositeMapper = {
+  serializedName: "#Microsoft.Skills.Text.CustomEntityLookupSkill",
+  type: {
+    name: "Composite",
+    className: "CustomEntityLookupSkill",
+    uberParent: "SearchIndexerSkill",
+    polymorphicDiscriminator: SearchIndexerSkill.type.polymorphicDiscriminator,
+    modelProperties: {
+      ...SearchIndexerSkill.type.modelProperties,
+      defaultLanguageCode: {
+        serializedName: "defaultLanguageCode",
+        nullable: true,
+        type: {
+          name: "String"
+        }
+      },
+      entitiesDefinitionUri: {
+        serializedName: "entitiesDefinitionUri",
+        nullable: true,
+        type: {
+          name: "String"
+        }
+      },
+      inlineEntitiesDefinition: {
+        serializedName: "inlineEntitiesDefinition",
+        nullable: true,
+        type: {
+          name: "Sequence",
+          element: {
+            type: {
+              name: "Composite",
+              className: "CustomEntity"
+            }
+          }
+        }
+      },
+      globalDefaultCaseSensitive: {
+        serializedName: "globalDefaultCaseSensitive",
+        nullable: true,
+        type: {
+          name: "Boolean"
+        }
+      },
+      globalDefaultAccentSensitive: {
+        serializedName: "globalDefaultAccentSensitive",
+        nullable: true,
+        type: {
+          name: "Boolean"
+        }
+      },
+      globalDefaultFuzzyEditDistance: {
+        serializedName: "globalDefaultFuzzyEditDistance",
+        nullable: true,
+        type: {
+          name: "Number"
+        }
+      }
+    }
+  }
+};
+
 export const TextTranslationSkill: coreHttp.CompositeMapper = {
   serializedName: "#Microsoft.Skills.Text.TranslationSkill",
   type: {
@@ -2455,6 +2854,41 @@ export const TextTranslationSkill: coreHttp.CompositeMapper = {
         nullable: true,
         type: {
           name: "String"
+        }
+      }
+    }
+  }
+};
+
+export const DocumentExtractionSkill: coreHttp.CompositeMapper = {
+  serializedName: "#Microsoft.Skills.Util.DocumentExtractionSkill",
+  type: {
+    name: "Composite",
+    className: "DocumentExtractionSkill",
+    uberParent: "SearchIndexerSkill",
+    polymorphicDiscriminator: SearchIndexerSkill.type.polymorphicDiscriminator,
+    modelProperties: {
+      ...SearchIndexerSkill.type.modelProperties,
+      parsingMode: {
+        serializedName: "parsingMode",
+        nullable: true,
+        type: {
+          name: "String"
+        }
+      },
+      dataToExtract: {
+        serializedName: "dataToExtract",
+        nullable: true,
+        type: {
+          name: "String"
+        }
+      },
+      configuration: {
+        serializedName: "configuration",
+        nullable: true,
+        type: {
+          name: "Dictionary",
+          value: { type: { name: "any" } }
         }
       }
     }
@@ -2540,6 +2974,40 @@ export const CognitiveServicesAccountKey: coreHttp.CompositeMapper = {
       ...CognitiveServicesAccount.type.modelProperties,
       key: {
         serializedName: "key",
+        required: true,
+        type: {
+          name: "String"
+        }
+      }
+    }
+  }
+};
+
+export const SearchIndexerKnowledgeStoreTableProjectionSelector: coreHttp.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SearchIndexerKnowledgeStoreTableProjectionSelector",
+    modelProperties: {
+      ...SearchIndexerKnowledgeStoreProjectionSelector.type.modelProperties,
+      tableName: {
+        serializedName: "tableName",
+        required: true,
+        type: {
+          name: "String"
+        }
+      }
+    }
+  }
+};
+
+export const SearchIndexerKnowledgeStoreBlobProjectionSelector: coreHttp.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SearchIndexerKnowledgeStoreBlobProjectionSelector",
+    modelProperties: {
+      ...SearchIndexerKnowledgeStoreProjectionSelector.type.modelProperties,
+      storageContainer: {
+        serializedName: "storageContainer",
         required: true,
         type: {
           name: "String"
@@ -4270,6 +4738,41 @@ export const PatternReplaceCharFilter: coreHttp.CompositeMapper = {
   }
 };
 
+export const CustomNormalizer: coreHttp.CompositeMapper = {
+  serializedName: "#Microsoft.Azure.Search.CustomNormalizer",
+  type: {
+    name: "Composite",
+    className: "CustomNormalizer",
+    uberParent: "LexicalNormalizer",
+    polymorphicDiscriminator: LexicalNormalizer.type.polymorphicDiscriminator,
+    modelProperties: {
+      ...LexicalNormalizer.type.modelProperties,
+      tokenFilters: {
+        serializedName: "tokenFilters",
+        type: {
+          name: "Sequence",
+          element: {
+            type: {
+              name: "String"
+            }
+          }
+        }
+      },
+      charFilters: {
+        serializedName: "charFilters",
+        type: {
+          name: "Sequence",
+          element: {
+            type: {
+              name: "String"
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
 export const ClassicSimilarity: coreHttp.CompositeMapper = {
   serializedName: "#Microsoft.Azure.Search.ClassicSimilarity",
   type: {
@@ -4310,6 +4813,26 @@ export const BM25Similarity: coreHttp.CompositeMapper = {
   }
 };
 
+export const SearchIndexerKnowledgeStoreObjectProjectionSelector: coreHttp.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SearchIndexerKnowledgeStoreObjectProjectionSelector",
+    modelProperties: {
+      ...SearchIndexerKnowledgeStoreBlobProjectionSelector.type.modelProperties
+    }
+  }
+};
+
+export const SearchIndexerKnowledgeStoreFileProjectionSelector: coreHttp.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SearchIndexerKnowledgeStoreFileProjectionSelector",
+    modelProperties: {
+      ...SearchIndexerKnowledgeStoreBlobProjectionSelector.type.modelProperties
+    }
+  }
+};
+
 export let discriminators = {
   DataChangeDetectionPolicy: DataChangeDetectionPolicy,
   DataDeletionDetectionPolicy: DataDeletionDetectionPolicy,
@@ -4320,6 +4843,7 @@ export let discriminators = {
   LexicalTokenizer: LexicalTokenizer,
   TokenFilter: TokenFilter,
   CharFilter: CharFilter,
+  LexicalNormalizer: LexicalNormalizer,
   Similarity: Similarity,
   "DataChangeDetectionPolicy.#Microsoft.Azure.Search.HighWaterMarkChangeDetectionPolicy": HighWaterMarkChangeDetectionPolicy,
   "DataChangeDetectionPolicy.#Microsoft.Azure.Search.SqlIntegratedChangeTrackingPolicy": SqlIntegratedChangeTrackingPolicy,
@@ -4334,7 +4858,9 @@ export let discriminators = {
   "SearchIndexerSkill.#Microsoft.Skills.Text.EntityRecognitionSkill": EntityRecognitionSkill,
   "SearchIndexerSkill.#Microsoft.Skills.Text.SentimentSkill": SentimentSkill,
   "SearchIndexerSkill.#Microsoft.Skills.Text.SplitSkill": SplitSkill,
+  "SearchIndexerSkill.#Microsoft.Skills.Text.CustomEntityLookupSkill": CustomEntityLookupSkill,
   "SearchIndexerSkill.#Microsoft.Skills.Text.TranslationSkill": TextTranslationSkill,
+  "SearchIndexerSkill.#Microsoft.Skills.Util.DocumentExtractionSkill": DocumentExtractionSkill,
   "SearchIndexerSkill.#Microsoft.Skills.Custom.WebApiSkill": WebApiSkill,
   "CognitiveServicesAccount.#Microsoft.Azure.Search.DefaultCognitiveServices": DefaultCognitiveServicesAccount,
   "CognitiveServicesAccount.#Microsoft.Azure.Search.CognitiveServicesByKey": CognitiveServicesAccountKey,
@@ -4385,6 +4911,7 @@ export let discriminators = {
   "TokenFilter.#Microsoft.Azure.Search.WordDelimiterTokenFilter": WordDelimiterTokenFilter,
   "CharFilter.#Microsoft.Azure.Search.MappingCharFilter": MappingCharFilter,
   "CharFilter.#Microsoft.Azure.Search.PatternReplaceCharFilter": PatternReplaceCharFilter,
+  "LexicalNormalizer.#Microsoft.Azure.Search.CustomNormalizer": CustomNormalizer,
   "Similarity.#Microsoft.Azure.Search.ClassicSimilarity": ClassicSimilarity,
   "Similarity.#Microsoft.Azure.Search.BM25Similarity": BM25Similarity
 };

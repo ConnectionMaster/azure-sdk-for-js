@@ -1,6 +1,29 @@
 # Release History
 
-## 5.1.0-beta.5 (Unreleased)
+## 5.1.0-beta.7 (Unreleased)
+
+### Breaking Changes
+
+- `PiiEntityDomainType` was renamed to `PiiEntityDomain`.
+
+## 5.1.0-beta.6 (2021-05-18)
+
+### New Features
+
+- We are now targeting the service's v3.1-preview.5 API as the default instead of v3.1-preview.4.
+- `beginAnalyzeActions` adds support for analyze sentiment actions.
+- `disableServiceLogs` parameter is added to most actions in `beginAnalyzeActions` that controls service-side logging.
+
+### Breaking Changes
+
+- `beginAnalyzeBatchActions` was renamed to `beginAnalyzeActions`.
+- `TextElements_v8` is renamed to `TextElement_v8` in model `StringIndexType`.
+
+### Key Bug Fixes
+
+- Results of entity linking actions were not returned correctly by `beginAnalyzeActions` and that is now fixed.
+
+## 5.1.0-beta.5 (2021-03-11)
 
 - We are now targeting the service's v3.1-preview.4 API as the default instead of v3.1-preview.3.
 - [Breaking] Aspects in opinions mining are now called targets and each individual opinion is now called an assessment. The new naming simplifies the naming of different parts of the response.
@@ -9,6 +32,7 @@
 - `beginAnalyzeHealthcareEntities` entities now include `assertions` instead of `isNegated` which gives more context about the respective entity.
 - [Breaking] `beginAnalyzeHealthcareEntities` no longer returns `relatedEntities`.
 - `recognizePiiEntities` takes a new option, `categoriesFilter`, that specifies a list of Pii categories to return.
+- [Breaking] `statistics` is no longer part of `PagedAnalyzeBatchActionsResult`.
 
 ## 5.1.0-beta.4 (2021-02-10)
 

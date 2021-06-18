@@ -1,27 +1,29 @@
 let nock = require('nock');
 
-module.exports.hash = "351e07a6e84a7c1868189a472027db0c";
+module.exports.hash = "94aa021d271cac8daa16f4a5666cc01c";
 
 module.exports.testInfo = {"uniqueName":{},"newDate":{}}
 
 nock('https://endpoint', {"encodedQueryParams":true})
-  .get('/chat/threads/19%3Ad1799fdf7b8b4f5e96675f30c01296e1%40thread.v2/messages/1612470096086')
+  .get('/chat/threads/19%3A-SU2gzDrzE720bWocJYfAkee6As1QmtdJW3bcNJWyEw1%40thread.v2/messages/1620757462303')
   .query(true)
-  .reply(200, {"id":"1612470096086","type":"text","sequenceId":"3","version":"1612470096086","content":{"message":"content"},"senderDisplayName":"","createdOn":"2021-02-04T20:21:36Z","senderId":"8:acs:46849534-eb08-4ab7-bde7-c36928cd1547_00000008-0e96-ace2-b0b7-3a3a0d0000a8"}, [
+  .reply(200, {"id":"1620757462303","type":"text","sequenceId":"4","version":"1620757462303","content":{"message":"content"},"senderDisplayName":"","createdOn":"2021-05-11T18:24:22Z","senderCommunicationIdentifier":{"rawId":"8:acs:1b5cc06b-f352-4571-b1e6-d9b259b7c776_00000009-fc8d-d468-2a7a-5b3a0d0005f5","communicationUser":{"id":"8:acs:1b5cc06b-f352-4571-b1e6-d9b259b7c776_00000009-fc8d-d468-2a7a-5b3a0d0005f5"}},"metadata":{"tags":"sometag"}}, [
   'Transfer-Encoding',
   'chunked',
   'Content-Type',
   'application/json; charset=utf-8',
   'MS-CV',
-  'olbCupxxDEeYXe/norB0+A.0',
+  'ceGlDmDW6UevPM1gfFpa7w.0',
   'Strict-Transport-Security',
   'max-age=2592000',
   'api-supported-versions',
-  '2020-09-21-preview2, 2020-11-01-preview3, 2021-01-27-preview4',
+  '2020-09-21-preview2, 2020-11-01-preview3, 2021-01-27-preview4, 2021-03-01-preview5, 2021-03-07, 2021-04-05-preview6',
   'X-Processing-Time',
-  '262ms',
+  '257ms',
+  'X-Cache',
+  'CONFIG_NOCACHE',
   'X-Azure-Ref',
-  '0UVccYAAAAAAN+eQ0Hhs2TaBVqTAL9WlqWVZSMzBFREdFMDMwOQBjYzkyNzU4ZC0wNWY3LTRhZDYtYWE1ZS0wZmE5NzE4ZDg5ODU=',
+  '018uaYAAAAABE2yW1ZMivRIxfLvgRKNbuV1NURURHRTA4MTkANzA1NDM5NWUtY2UxZC00NTVlLWFlNWQtMjMzY2E4MzkwNTU0',
   'Date',
-  'Thu, 04 Feb 2021 20:21:37 GMT'
+  'Tue, 11 May 2021 18:24:23 GMT'
 ]);

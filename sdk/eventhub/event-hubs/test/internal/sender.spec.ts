@@ -12,8 +12,10 @@ import {
   EventHubConsumerClient,
   EventHubProducerClient,
   EventPosition,
+  OperationOptions,
   ReceivedEventData,
-  SendBatchOptions
+  SendBatchOptions,
+  TryAddOptions
 } from "../../src";
 import {
   EnvVarKeys,
@@ -21,11 +23,10 @@ import {
   getStartingPositionsForTests,
   setTracerForTest
 } from "../public/utils/testUtils";
-import { AbortController } from "@azure/abort-controller";
 import { SpanGraph, TestSpan } from "@azure/core-tracing";
 import { TRACEPARENT_PROPERTY } from "../../src/diagnostics/instrumentEventData";
 import { SubscriptionHandlerForTests } from "../public/utils/subscriptionHandlerForTests";
-import { StandardAbortMessage } from "../../src/util/timeoutAbortSignalUtils";
+import { setSpan, context } from "@azure/core-tracing";
 const env = getEnvVars();
 
 describe("EventHub Sender", function(): void {
@@ -318,9 +319,7 @@ describe("EventHub Sender", function(): void {
           { body: `${list[i].name}` },
           {
             tracingOptions: {
-              spanOptions: {
-                parent: rootSpan.context()
-              }
+              tracingContext: setSpan(context.active(), rootSpan)
             }
           }
         );
@@ -355,123 +354,130 @@ describe("EventHub Sender", function(): void {
       resetTracer();
     });
 
-    it("will not instrument already instrumented events", async function(): Promise<void> {
-      const { tracer, resetTracer } = setTracerForTest();
-
-      const rootSpan = tracer.startSpan("test");
-
-      const list = [
-        { name: "Albert" },
-        {
-          name: "Marie",
-          properties: {
-            [TRACEPARENT_PROPERTY]: "foo"
-          }
-        }
-      ];
-
-      const eventDataBatch = await producerClient.createBatch({
-        partitionId: "0"
-      });
-
-      for (let i = 0; i < 2; i++) {
-        eventDataBatch.tryAdd(
-          { body: `${list[i].name}`, properties: list[i].properties },
-          {
-            tracingOptions: {
-              spanOptions: {
-                parent: rootSpan.context()
-              }
-            }
-          }
-        );
-      }
-      await producerClient.sendBatch(eventDataBatch);
-      rootSpan.end();
-
-      const rootSpans = tracer.getRootSpans();
-      rootSpans.length.should.equal(2, "Should only have two root spans.");
-      rootSpans[0].should.equal(rootSpan, "The root span should match what was passed in.");
-
-      const expectedGraph: SpanGraph = {
-        roots: [
-          {
-            name: rootSpan.name,
-            children: [
-              {
-                name: "Azure.EventHubs.message",
-                children: []
-              }
-            ]
-          }
-        ]
+    function legacyOptionsUsingSpanContext(rootSpan: TestSpan): Pick<TryAddOptions, "parentSpan"> {
+      return {
+        parentSpan: rootSpan.context()
       };
+    }
 
-      tracer.getSpanGraph(rootSpan.context().traceId).should.eql(expectedGraph);
-      tracer.getActiveSpans().length.should.equal(0, "All spans should have had end called.");
-      resetTracer();
-    });
+    function legacyOptionsUsingSpan(rootSpan: TestSpan): Pick<TryAddOptions, "parentSpan"> {
+      return {
+        parentSpan: rootSpan
+      };
+    }
 
-    it("will support tracing batch and send", async function(): Promise<void> {
-      const { tracer, resetTracer } = setTracerForTest();
-
-      const rootSpan = tracer.startSpan("root");
-
-      const list = [{ name: "Albert" }, { name: "Marie" }];
-
-      const eventDataBatch = await producerClient.createBatch({
-        partitionId: "0"
-      });
-      for (let i = 0; i < 2; i++) {
-        eventDataBatch.tryAdd(
-          { body: `${list[i].name}` },
-          {
-            tracingOptions: {
-              spanOptions: {
-                parent: rootSpan.context()
-              }
-            }
-          }
-        );
-      }
-      await producerClient.sendBatch(eventDataBatch, {
+    function modernOptions(rootSpan: TestSpan): OperationOptions {
+      return {
         tracingOptions: {
-          spanOptions: {
-            parent: rootSpan.context()
-          }
+          tracingContext: setSpan(context.active(), rootSpan)
         }
-      });
-      rootSpan.end();
+      };
+    }
 
-      const rootSpans = tracer.getRootSpans();
-      rootSpans.length.should.equal(1, "Should only have one root span.");
-      rootSpans[0].should.equal(rootSpan, "The root span should match what was passed in.");
+    [legacyOptionsUsingSpan, legacyOptionsUsingSpanContext, modernOptions].forEach((optionsFn) => {
+      describe(`tracing (${optionsFn.name})`, () => {
+        it("will not instrument already instrumented events", async function(): Promise<void> {
+          const { tracer, resetTracer } = setTracerForTest();
 
-      const expectedGraph: SpanGraph = {
-        roots: [
-          {
-            name: rootSpan.name,
-            children: [
+          const rootSpan = tracer.startSpan("test");
+
+          const list = [
+            { name: "Albert" },
+            {
+              name: "Marie",
+              properties: {
+                [TRACEPARENT_PROPERTY]: "foo"
+              }
+            }
+          ];
+
+          const eventDataBatch = await producerClient.createBatch({
+            partitionId: "0"
+          });
+
+          for (let i = 0; i < 2; i++) {
+            eventDataBatch.tryAdd(
+              { body: `${list[i].name}`, properties: list[i].properties },
+              optionsFn(rootSpan)
+            );
+          }
+          await producerClient.sendBatch(eventDataBatch);
+          rootSpan.end();
+
+          const rootSpans = tracer.getRootSpans();
+          rootSpans.length.should.equal(2, "Should only have two root spans.");
+          rootSpans[0].should.equal(rootSpan, "The root span should match what was passed in.");
+
+          const expectedGraph: SpanGraph = {
+            roots: [
               {
-                name: "Azure.EventHubs.message",
-                children: []
-              },
-              {
-                name: "Azure.EventHubs.message",
-                children: []
-              },
-              {
-                name: "Azure.EventHubs.send",
-                children: []
+                name: rootSpan.name,
+                children: [
+                  {
+                    name: "Azure.EventHubs.message",
+                    children: []
+                  }
+                ]
               }
             ]
-          }
-        ]
-      };
+          };
 
-      tracer.getSpanGraph(rootSpan.context().traceId).should.eql(expectedGraph);
-      tracer.getActiveSpans().length.should.equal(0, "All spans should have had end called.");
-      resetTracer();
+          tracer.getSpanGraph(rootSpan.context().traceId).should.eql(expectedGraph);
+          tracer.getActiveSpans().length.should.equal(0, "All spans should have had end called.");
+          resetTracer();
+        });
+
+        it("will support tracing batch and send", async function(): Promise<void> {
+          const { tracer, resetTracer } = setTracerForTest();
+
+          const rootSpan = tracer.startSpan("root");
+
+          const list = [{ name: "Albert" }, { name: "Marie" }];
+
+          const eventDataBatch = await producerClient.createBatch({
+            partitionId: "0"
+          });
+          for (let i = 0; i < 2; i++) {
+            eventDataBatch.tryAdd({ body: `${list[i].name}` }, optionsFn(rootSpan));
+          }
+          await producerClient.sendBatch(eventDataBatch, {
+            tracingOptions: {
+              tracingContext: setSpan(context.active(), rootSpan)
+            }
+          });
+          rootSpan.end();
+
+          const rootSpans = tracer.getRootSpans();
+          rootSpans.length.should.equal(1, "Should only have one root span.");
+          rootSpans[0].should.equal(rootSpan, "The root span should match what was passed in.");
+
+          const expectedGraph: SpanGraph = {
+            roots: [
+              {
+                name: rootSpan.name,
+                children: [
+                  {
+                    name: "Azure.EventHubs.message",
+                    children: []
+                  },
+                  {
+                    name: "Azure.EventHubs.message",
+                    children: []
+                  },
+                  {
+                    name: "Azure.EventHubs.send",
+                    children: []
+                  }
+                ]
+              }
+            ]
+          };
+
+          tracer.getSpanGraph(rootSpan.context().traceId).should.eql(expectedGraph);
+          tracer.getActiveSpans().length.should.equal(0, "All spans should have had end called.");
+          resetTracer();
+        });
+      });
     });
 
     it("with partition key should be sent successfully.", async function(): Promise<void> {
@@ -497,33 +503,6 @@ describe("EventHub Sender", function(): void {
       }
       await producerClient.sendBatch(eventDataBatch);
       eventDataBatch.count.should.equal(1);
-    });
-
-    // TODO: Enable this test https://github.com/Azure/azure-sdk-for-js/issues/9202 is fixed
-    it.skip("should support being cancelled", async function(): Promise<void> {
-      try {
-        // abortSignal event listeners will be triggered after synchronous paths are executed
-        const abortSignal = AbortController.timeout(0);
-        await producerClient.createBatch({ abortSignal: abortSignal });
-        throw new Error(`Test failure`);
-      } catch (err) {
-        err.name.should.equal("AbortError");
-        err.message.should.equal(StandardAbortMessage);
-      }
-    });
-
-    it("should support being cancelled from an already aborted AbortSignal", async function(): Promise<
-      void
-    > {
-      const abortController = new AbortController();
-      abortController.abort();
-      try {
-        await producerClient.createBatch({ abortSignal: abortController.signal });
-        throw new Error(`Test failure`);
-      } catch (err) {
-        err.name.should.equal("AbortError");
-        err.message.should.equal(StandardAbortMessage);
-      }
     });
   });
 
@@ -645,9 +624,7 @@ describe("EventHub Sender", function(): void {
       await producerClient.sendBatch(events, {
         partitionId: "0",
         tracingOptions: {
-          spanOptions: {
-            parent: rootSpan.context()
-          }
+          tracingContext: setSpan(context.active(), rootSpan)
         }
       });
       rootSpan.end();
@@ -709,9 +686,7 @@ describe("EventHub Sender", function(): void {
       await producerClient.sendBatch(events, {
         partitionId: "0",
         tracingOptions: {
-          spanOptions: {
-            parent: rootSpan.context()
-          }
+          tracingContext: setSpan(context.active(), rootSpan)
         }
       });
       rootSpan.end();
@@ -868,9 +843,7 @@ describe("EventHub Sender", function(): void {
       }
       await producerClient.sendBatch(events, {
         tracingOptions: {
-          spanOptions: {
-            parent: rootSpan.context()
-          }
+          tracingContext: setSpan(context.active(), rootSpan)
         }
       });
       rootSpan.end();
@@ -940,9 +913,7 @@ describe("EventHub Sender", function(): void {
       events[0].properties = { [TRACEPARENT_PROPERTY]: "foo" };
       await producerClient.sendBatch(events, {
         tracingOptions: {
-          spanOptions: {
-            parent: rootSpan.context()
-          }
+          tracingContext: setSpan(context.active(), rootSpan)
         }
       });
       rootSpan.end();
@@ -984,45 +955,6 @@ describe("EventHub Sender", function(): void {
       tracer.getSpanGraph(rootSpan.context().traceId).should.eql(expectedGraph);
       tracer.getActiveSpans().length.should.equal(0, "All spans should have had end called.");
       resetTracer();
-    });
-
-    it("should support being cancelled", async function(): Promise<void> {
-      try {
-        const data: EventData[] = [
-          {
-            body: "Sender Cancellation Test - timeout 0"
-          }
-        ];
-        // call send() once to create a connection
-        await producerClient.sendBatch(data);
-        // abortSignal event listeners will be triggered after synchronous paths are executed
-        const abortSignal = AbortController.timeout(0);
-        await producerClient.sendBatch(data, { abortSignal });
-        throw new Error(`Test failure`);
-      } catch (err) {
-        err.name.should.equal("AbortError");
-        err.message.should.equal("Send request has been cancelled.");
-      }
-    });
-
-    it("should support being cancelled from an already aborted AbortSignal", async function(): Promise<
-      void
-    > {
-      const abortController = new AbortController();
-      abortController.abort();
-
-      try {
-        const data: EventData[] = [
-          {
-            body: "Sender Cancellation Test - immediate"
-          }
-        ];
-        await producerClient.sendBatch(data, { abortSignal: abortController.signal });
-        throw new Error(`Test failure`);
-      } catch (err) {
-        err.name.should.equal("AbortError");
-        err.message.should.equal(StandardAbortMessage);
-      }
     });
 
     it("should throw when partitionId and partitionKey are provided", async function(): Promise<

@@ -24,7 +24,7 @@ export class DetectLanguageTest extends PerfStressTest<DetectLanguagePerfTestOpt
       description: "Number of documents",
       shortName: "n",
       longName: "docs-count",
-      defaultValue: 10
+      defaultValue: 1000
     }
   };
   client: TextAnalyticsClient;
@@ -33,7 +33,7 @@ export class DetectLanguageTest extends PerfStressTest<DetectLanguagePerfTestOpt
   constructor() {
     super();
     this.options = this.parsedOptions;
-    this.docs = Array(this.parsedOptions["documents-count"]?.value!).fill(
+    this.docs = Array(this.parsedOptions["documents-count"]?.value).fill(
       "Detta är ett dokument skrivet på engelska."
     );
     let credential: TokenCredential | AzureKeyCredential;

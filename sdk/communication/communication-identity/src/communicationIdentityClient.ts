@@ -14,7 +14,7 @@ import {
   OperationOptions,
   operationOptionsToRequestOptionsBase
 } from "@azure/core-http";
-import { CanonicalCode } from "@opentelemetry/api";
+import { SpanStatusCode } from "@azure/core-tracing";
 import { CommunicationIdentity, IdentityRestClient } from "./generated/src/identityRestClient";
 import { SDK_VERSION } from "./constants";
 import { logger } from "./common/logger";
@@ -112,7 +112,7 @@ export class CommunicationIdentityClient {
   /**
    * Creates a scoped user token.
    *
-   * @param user - The user whose tokens are being revoked.
+   * @param user - The user whose tokens are being issued.
    * @param scopes - Scopes to include in the token.
    * @param options - Additional options for the request.
    */
@@ -131,7 +131,7 @@ export class CommunicationIdentityClient {
       return result;
     } catch (e) {
       span.setStatus({
-        code: CanonicalCode.UNKNOWN,
+        code: SpanStatusCode.ERROR,
         message: e.message
       });
       throw e;
@@ -158,7 +158,7 @@ export class CommunicationIdentityClient {
       );
     } catch (e) {
       span.setStatus({
-        code: CanonicalCode.UNKNOWN,
+        code: SpanStatusCode.ERROR,
         message: e.message
       });
       throw e;
@@ -181,7 +181,7 @@ export class CommunicationIdentityClient {
       };
     } catch (e) {
       span.setStatus({
-        code: CanonicalCode.UNKNOWN,
+        code: SpanStatusCode.ERROR,
         message: e.message
       });
       throw e;
@@ -196,12 +196,12 @@ export class CommunicationIdentityClient {
    * @param scopes - Scopes to include in the token.
    * @param options - Additional options for the request.
    */
-  public async createUserWithToken(
+  public async createUserAndToken(
     scopes: TokenScope[],
     options: OperationOptions = {}
   ): Promise<CommunicationUserToken> {
     const { span, updatedOptions } = createSpan(
-      "CommunicationIdentity-createUserWithToken",
+      "CommunicationIdentity-createUserAndToken",
       options
     );
     try {
@@ -215,7 +215,7 @@ export class CommunicationIdentityClient {
       };
     } catch (e) {
       span.setStatus({
-        code: CanonicalCode.UNKNOWN,
+        code: SpanStatusCode.ERROR,
         message: e.message
       });
       throw e;
@@ -242,7 +242,38 @@ export class CommunicationIdentityClient {
       );
     } catch (e) {
       span.setStatus({
-        code: CanonicalCode.UNKNOWN,
+        code: SpanStatusCode.ERROR,
+        message: e.message
+      });
+      throw e;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Exchanges a Teams token for a new ACS access token.
+   *
+   * @param teamsToken - The Teams access token.
+   * @param options - Additional options for the request.
+   */
+  public async exchangeTeamsToken(
+    teamsToken: string,
+    options: OperationOptions = {}
+  ): Promise<CommunicationAccessToken> {
+    const { span, updatedOptions } = createSpan(
+      "CommunicationIdentity-exchangeTeamsToken",
+      options
+    );
+    try {
+      const { _response, ...result } = await this.client.exchangeTeamsUserAccessToken(
+        { token: teamsToken },
+        operationOptionsToRequestOptionsBase(updatedOptions)
+      );
+      return result;
+    } catch (e) {
+      span.setStatus({
+        code: SpanStatusCode.ERROR,
         message: e.message
       });
       throw e;

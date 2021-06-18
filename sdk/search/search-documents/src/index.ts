@@ -110,7 +110,8 @@ export {
   SearchResourceEncryptionKey,
   SearchIndexStatistics,
   SearchServiceStatistics,
-  SearchIndexer
+  SearchIndexer,
+  LexicalNormalizer
 } from "./serviceModels";
 export { default as GeographyPoint } from "./geographyPoint";
 export { odata } from "./odata";
@@ -125,7 +126,15 @@ export {
   IndexingResult,
   QueryType,
   SearchMode,
-  ScoringStatistics
+  ScoringStatistics,
+  Answers,
+  KnownAnswers,
+  QueryLanguage,
+  KnownQueryLanguage,
+  Speller,
+  KnownSpeller,
+  CaptionResult,
+  AnswerResult
 } from "./generated/data/models";
 export {
   RegexFlags,
@@ -196,6 +205,12 @@ export {
   MergeSkill,
   EntityRecognitionSkill,
   SentimentSkill,
+  CustomEntityLookupSkill,
+  CustomEntityLookupSkillLanguage,
+  KnownCustomEntityLookupSkillLanguage,
+  DocumentExtractionSkill,
+  CustomEntity,
+  CustomEntityAlias,
   SplitSkill,
   TextTranslationSkill,
   WebApiSkill,
@@ -268,6 +283,21 @@ export {
   DataChangeDetectionPolicy as BaseDataChangeDetectionPolicy,
   LexicalAnalyzer as BaseLexicalAnalyzer,
   CharFilter as BaseCharFilter,
-  DataDeletionDetectionPolicy as BaseDataDeletionDetectionPolicy
+  DataDeletionDetectionPolicy as BaseDataDeletionDetectionPolicy,
+  LexicalNormalizerName,
+  KnownLexicalNormalizerName,
+  CustomNormalizer,
+  TokenFilterName,
+  KnownTokenFilterName,
+  CharFilterName,
+  KnownCharFilterName,
+  LexicalNormalizer as BaseLexicalNormalizer,
+  SearchIndexerKnowledgeStore,
+  SearchIndexerKnowledgeStoreProjection,
+  SearchIndexerKnowledgeStoreFileProjectionSelector,
+  SearchIndexerKnowledgeStoreBlobProjectionSelector,
+  SearchIndexerKnowledgeStoreProjectionSelector,
+  SearchIndexerKnowledgeStoreObjectProjectionSelector,
+  SearchIndexerKnowledgeStoreTableProjectionSelector
 } from "./generated/service/models";
 export { AzureKeyCredential } from "@azure/core-auth";

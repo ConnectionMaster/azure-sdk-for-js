@@ -1,12 +1,22 @@
 # Release History
 
-## 1.0.0-beta.5 (Unreleased)
+## 1.1.0-beta.1 (Unreleased)
+
+- `CommunicationIdentityClient` added a new method `exchangeTeamsToken` that provides the ability to exchange a Teams token for an ACS access token.
+
+## 1.0.0 (2021-03-29)
+
+- Stable release of `@azure/communication-identity`.
+
+## 1.0.0-beta.5 (2021-03-09)
 
 ### Breaking Changes
 
 - `CommunicationIdentityClient` method `issueToken` renamed to `getToken`.
+- `CommunicationIdentityClient` method `createUserWithToken` renamed to `createUserAndToken`.
 - Renamed `CommunicationIdentityOptions` to `CommunicationIdentityClientOptions`.
 - Removed `_response` from returned models.
+- Removed `dist-browser` from the output folders. To bundle the Azure SDK libraries, please read our bundling guide: [link](https://github.com/Azure/azure-sdk-for-js/blob/master/documentation/Bundling.md).
 
 ## 1.0.0-beta.4 (2021-02-09)
 

@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 import { assert } from "chai";
+import { Context } from "mocha";
 
 import {
   AnomalyAlertConfiguration,
@@ -19,8 +20,7 @@ matrix([[true, false]] as const, async (useAad) => {
       let client: MetricsAdvisorAdministrationClient;
       let recorder: Recorder;
 
-      beforeEach(function() {
-        // eslint-disable-next-line no-invalid-this
+      beforeEach(function(this: Context) {
         ({ recorder, client } = createRecordedAdminClient(this, makeCredential(useAad)));
       });
 
@@ -78,7 +78,7 @@ matrix([[true, false]] as const, async (useAad) => {
           assert.ok(result.latestActiveTimestamp, "Expecting valid latest active timestamp");
         });
 
-        it("refreshes ingesetion status", async function() {
+        it("refreshes ingesetion status", async function(this: Context) {
           const iterator = client.listDataFeedIngestionStatus(
             testEnv.METRICS_ADVISOR_AZURE_SQLSERVER_DATAFEED_ID,
             new Date(Date.UTC(2020, 7, 22)),
@@ -101,7 +101,6 @@ matrix([[true, false]] as const, async (useAad) => {
             const result2 = await iterator2.next();
             assert.notEqual(result2.value.status, "Succeeded");
           } else {
-            // eslint-disable-next-line no-invalid-this
             this.skip();
           }
         });
@@ -277,7 +276,8 @@ matrix([[true, false]] as const, async (useAad) => {
             description: "alerting config description",
             crossMetricsOperator: "AND",
             metricAlertConfigurations: [metricAlertConfig, metricAlertConfig],
-            hookIds: []
+            hookIds: [],
+            splitAlertByDimensions: []
           };
 
           const actual = await client.createAlertConfig(expectedAlertConfig);
@@ -292,6 +292,10 @@ matrix([[true, false]] as const, async (useAad) => {
             expectedAlertConfig.metricAlertConfigurations[0].alertScope
           );
           assert.deepStrictEqual(actual.hookIds, expectedAlertConfig.hookIds);
+          assert.deepStrictEqual(
+            actual.splitAlertByDimensions,
+            expectedAlertConfig.splitAlertByDimensions
+          );
         });
 
         it("retrieves an alert configuration", async function() {
@@ -368,9 +372,8 @@ matrix([[true, false]] as const, async (useAad) => {
           }
         });
 
-        it("deletes an alert configuration", async function() {
+        it("deletes an alert configuration", async function(this: Context) {
           if (!createdAlertConfigId) {
-            // eslint-disable-next-line no-invalid-this
             this.skip();
           }
 
@@ -383,9 +386,8 @@ matrix([[true, false]] as const, async (useAad) => {
           }
         });
 
-        it("deletes a detection configuration", async function() {
+        it("deletes a detection configuration", async function(this: Context) {
           if (!createdDetectionConfigId) {
-            // eslint-disable-next-line no-invalid-this
             this.skip();
           }
 

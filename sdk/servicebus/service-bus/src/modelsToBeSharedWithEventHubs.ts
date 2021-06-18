@@ -3,9 +3,8 @@
 
 // TODO: this code is a straight-copy from EventHubs. Need to merge.
 
-import { CanonicalCode, Span } from "@opentelemetry/api";
+import { OperationTracingOptions, SpanStatusCode, Span, SpanContext } from "@azure/core-tracing";
 import { OperationOptions } from "@azure/core-http";
-import { OperationTracingOptions } from "@azure/core-tracing";
 
 /**
  * NOTE: This type is intended to mirror the relevant fields and structure from `@azure/core-http` OperationOptions
@@ -22,6 +21,11 @@ export interface TryAddOptions {
    * The options to use when creating Spans for tracing.
    */
   tracingOptions?: OperationTracingOptions;
+
+  /**
+   * @deprecated Tracing options have been moved to the `tracingOptions` property.
+   */
+  parentSpan?: Span | SpanContext | null;
 }
 
 /**
@@ -34,11 +38,11 @@ export interface TryAddOptions {
 export async function trace<T>(fn: () => Promise<T>, span: Span): Promise<T> {
   try {
     const ret = await fn();
-    span.setStatus({ code: CanonicalCode.OK });
+    span.setStatus({ code: SpanStatusCode.OK });
     return ret;
   } catch (err) {
     span.setStatus({
-      code: CanonicalCode.UNKNOWN,
+      code: SpanStatusCode.ERROR,
       message: err.message
     });
     throw err;

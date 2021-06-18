@@ -1,12 +1,41 @@
 # Release History
 
-## 2.2.0 (Unreleased)
+## 3.0.1 (Unreleased)
+
+### Features Added
+
+### Breaking Changes
+
+### Key Bugs Fixed
+
+### Fixed
+
+
+## 3.0.0 (2021-06-09)
+
+### Breaking changes
+
+- Updates the `rhea-promise` and `rhea` dependencies to version 2.x. `rhea` contains a breaking change that changes deserialization of timestamps from numbers to Date objects.
+- Removes the `AsyncLock` and `defaultLock` exports. `defaultCancellableLock` should be used instead.
+
+## 2.3.0 (2021-04-29)
+
+- Updates `AmqpAnnotatedMessage` to identify the AMQP section where body data was decoded from. [PR 14703](https://github.com/Azure/azure-sdk-for-js/pull/14703).
+
+- Adds `CancellableAsyncLock` as an alternative to `AsyncLock` that supports cancellation via the abort signal. [PR 14844](https://github.com/Azure/azure-sdk-for-js/pull/14844).
+
+## 2.2.0 (2021-03-30)
+
+- Updates `translateError` to convert non-object type parameters to errors.
+  The parameter will be part of the error's `message` property unless the parameter is null or undefined.
+  Fixes issue [14499](https://github.com/Azure/azure-sdk-for-js/issues/14499).
 
 - Addresses issue [9988](https://github.com/Azure/azure-sdk-for-js/issues/9988)
   by updating the following operations to accept an `abortSignal` to allow cancellation:
   - CbsClient.init()
   - CbsClient.negotiateClaim()
   - RequestResponseLink.create()
+- Exporting `StandardAbortMessage` that is the standard error message accompanying the `AbortError`.
 
 ## 2.1.0 (2021-02-08)
 
@@ -134,7 +163,7 @@ We are cleaning the public API surface by
 - Updated to use the latest version of the `rhea` package.
   This update improves support for [bundling](https://github.com/Azure/azure-sdk-for-js/blob/master/documentation/Bundling.md) this library.
 
-## 1.0.0 (2019-01-08)
+## 1.0.0 (2020-01-08)
 
 - This release marks the general availability of the `@azure/core-amqp` package.
 - Improved detection of when an established socket is no longer receiving data from the service.

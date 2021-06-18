@@ -22,13 +22,6 @@ export interface AlertConfigurationsPageResponse extends Array<AnomalyAlertConfi
 // @public
 export type AlertQueryTimeMode = "AnomalyTime" | "CreatedTime" | "ModifiedTime";
 
-// @public (undocumented)
-export interface AlertSnoozeCondition {
-    autoSnooze: number;
-    onlyForSuccessive: boolean;
-    snoozeScope: SnoozeScope;
-}
-
 // @public
 export interface AlertsPageResponse extends Array<AnomalyAlert> {
     continuationToken?: string;
@@ -64,6 +57,7 @@ export interface AnomalyAlertConfiguration {
     id: string;
     metricAlertConfigurations: MetricAlertConfiguration[];
     name: string;
+    splitAlertByDimensions?: string[];
 }
 
 // @public
@@ -78,11 +72,22 @@ export interface AnomalyDetectionConfiguration {
 }
 
 // @public
-export type AnomalyDetectorDirection = string;
+export interface AnomalyDetectionConfigurationPatch {
+    description?: string;
+    name?: string;
+    seriesDetectionConditions?: MetricSingleSeriesDetectionCondition[];
+    seriesGroupDetectionConditions?: MetricSeriesGroupDetectionCondition[];
+    wholeSeriesDetectionCondition?: MetricDetectionConditionPatch;
+}
+
+// @public
+export type AnomalyDetectorDirection = "Both" | "Down" | "Up";
 
 // @public
 export interface AnomalyIncident {
+    readonly dataFeedId?: string;
     detectionConfigurationId: string;
+    readonly expectedValueOfRootNode?: number;
     id: string;
     lastOccurredTime: Date;
     metricId?: string;
@@ -90,6 +95,7 @@ export interface AnomalyIncident {
     severity: AnomalySeverity;
     startTime?: Date;
     status?: AnomalyStatus;
+    readonly valueOfRootNode?: number;
 }
 
 // @public
@@ -99,82 +105,110 @@ export type AnomalySeverity = "Low" | "Medium" | "High";
 export type AnomalyStatus = "Active" | "Resolved";
 
 // @public
-export type AnomalyValue = string;
+export type AnomalyValue = "AutoDetect" | "Anomaly" | "NotAnomaly";
 
 // @public
 export type AzureApplicationInsightsDataFeedSource = {
     dataSourceType: "AzureApplicationInsights";
-    dataSourceParameter: AzureApplicationInsightsParameter;
-};
-
-// @public (undocumented)
-export interface AzureApplicationInsightsParameter {
-    apiKey: string;
-    applicationId: string;
-    azureCloud: string;
+    azureCloud?: string;
+    applicationId?: string;
+    apiKey?: string;
     query: string;
-}
+    authenticationType: "Basic";
+};
 
 // @public
 export type AzureBlobDataFeedSource = {
     dataSourceType: "AzureBlob";
-    dataSourceParameter: AzureBlobParameter;
-};
-
-// @public (undocumented)
-export interface AzureBlobParameter {
-    blobTemplate: string;
     connectionString: string;
     container: string;
+    blobTemplate: string;
+    authenticationType: "Basic" | "ManagedIdentity";
+};
+
+// @public
+export type AzureCosmosDbDataFeedSource = {
+    dataSourceType: "AzureCosmosDB";
+    connectionString?: string;
+    sqlQuery: string;
+    database: string;
+    collectionId: string;
+    authenticationType: "Basic";
+};
+
+// @public
+export interface AzureDataExplorerAuthBasic {
+    authenticationType: "Basic";
 }
 
 // @public
-export type AzureCosmosDBDataFeedSource = {
-    dataSourceType: "AzureCosmosDB";
-    dataSourceParameter: AzureCosmosDBParameter;
-};
-
-// @public (undocumented)
-export interface AzureCosmosDBParameter {
-    collectionId: string;
-    connectionString: string;
-    database: string;
-    sqlQuery: string;
+export interface AzureDataExplorerAuthManagedIdentity {
+    authenticationType: "ManagedIdentity";
 }
+
+// @public
+export interface AzureDataExplorerAuthServicePrincipal {
+    authenticationType: "ServicePrincipal";
+    credentialId: string;
+}
+
+// @public
+export interface AzureDataExplorerAuthServicePrincipalInKeyVault {
+    authenticationType: "ServicePrincipalInKV";
+    credentialId: string;
+}
+
+// @public
+export type AzureDataExplorerAuthTypes = AzureDataExplorerAuthBasic | AzureDataExplorerAuthManagedIdentity | AzureDataExplorerAuthServicePrincipal | AzureDataExplorerAuthServicePrincipalInKeyVault;
 
 // @public
 export type AzureDataExplorerDataFeedSource = {
     dataSourceType: "AzureDataExplorer";
-    dataSourceParameter: SqlSourceParameter;
-};
+    connectionString: string;
+    query: string;
+} & AzureDataExplorerAuthTypes;
+
+// @public
+export type AzureDataLakeStorageGen2AuthTypes = DataLakeStorageGen2AuthBasic | DataLakeStorageGen2AuthManagedIdentity | DataLakeStorageGen2AuthServicePrincipal | DataLakeStorageGen2AuthServicePrincipalInKeyVault | DataLakeStorageGen2AuthSharedKey;
 
 // @public
 export type AzureDataLakeStorageGen2DataFeedSource = {
     dataSourceType: "AzureDataLakeStorageGen2";
-    dataSourceParameter: AzureDataLakeStorageGen2Parameter;
+    accountName: string;
+    fileSystemName: string;
+    directoryTemplate: string;
+    fileTemplate: string;
+} & AzureDataLakeStorageGen2AuthTypes;
+
+// @public
+export type AzureEventHubsDataFeedSource = {
+    dataSourceType: "AzureEventHubs";
+    connectionString?: string;
+    consumerGroup: string;
+    authenticationType: "Basic";
 };
 
-// @public (undocumented)
-export interface AzureDataLakeStorageGen2Parameter {
-    accountKey: string;
-    accountName: string;
-    directoryTemplate: string;
-    fileSystemName: string;
-    fileTemplate: string;
-}
+// @public
+export type AzureLogAnalyticsAuthTypes = LogAnalyticsAuthBasic | LogAnalyticsAuthServicePrincipal | LogAnalyticsAuthServicePrincipalInKeyVault;
+
+// @public
+export type AzureLogAnalyticsDataFeedSource = {
+    dataSourceType: "AzureLogAnalytics";
+    tenantId?: string;
+    clientId?: string;
+    clientSecret?: string;
+    workspaceId: string;
+    query: string;
+} & AzureLogAnalyticsAuthTypes;
 
 // @public
 export type AzureTableDataFeedSource = {
     dataSourceType: "AzureTable";
-    dataSourceParameter: AzureTableParameter;
-};
-
-// @public (undocumented)
-export interface AzureTableParameter {
     connectionString: string;
-    query: string;
     table: string;
-}
+    query: string;
+    authenticationType: "Basic";
+};
 
 // @public
 export type ChangeThresholdConditionUnion = {
@@ -192,7 +226,17 @@ export type ChangeThresholdConditionUnion = {
 };
 
 // @public
-export type CreateDataFeedOptions = DataFeedOptions & OperationOptions;
+export interface CreateDataFeedOptions extends OperationOptions {
+}
+
+// @public
+export interface CredentialsPageResponse extends Array<DatasourceCredentialUnion> {
+    continuationToken?: string;
+    _response: coreHttp.HttpResponse & {
+        bodyAsText: string;
+        parsedBody: any;
+    };
+}
 
 // @public
 export type DataFeed = {
@@ -204,19 +248,26 @@ export type DataFeed = {
     creator: string;
     source: DataFeedSource;
     schema: DataFeedSchema;
-    metricIds: Map<string, string>;
+    metricIds: Record<string, string>;
     granularity: DataFeedGranularity;
     ingestionSettings: DataFeedIngestionSettings;
-} & DataFeedOptions;
+    description?: string;
+    rollupSettings?: DataFeedRollupSettings;
+    missingDataPointFillSettings?: DataFeedMissingDataPointFillSettings;
+    accessMode?: DataFeedAccessMode;
+    adminEmails?: string[];
+    viewerEmails?: string[];
+    actionLinkTemplate?: string;
+};
 
 // @public
-export type DataFeedAccessMode = "Private" | "Public" | string;
+export type DataFeedAccessMode = "Private" | "Public";
 
 // @public
 export type DataFeedDescriptor = Omit<DataFeed, "id" | "metricIds" | "isAdmin" | "status" | "creator" | "createdOn">;
 
 // @public
-export type DataFeedDetailStatus = string;
+export type DataFeedDetailStatus = "Active" | "Paused";
 
 // @public
 export interface DataFeedDimension {
@@ -226,8 +277,7 @@ export interface DataFeedDimension {
 
 // @public
 export type DataFeedGranularity = {
-    granularityType: "Yearly" | "Monthly" | "Weekly" | "Daily" | "Hourly" | "PerMinute" | "PerSecond" | string;
-    customGranularityValue?: number;
+    granularityType: "Yearly" | "Monthly" | "Weekly" | "Daily" | "Hourly" | "PerMinute" | "PerSecond";
 } | {
     granularityType: "Custom";
     customGranularityValue: number;
@@ -258,23 +308,11 @@ export interface DataFeedMetric {
 
 // @public
 export type DataFeedMissingDataPointFillSettings = {
-    fillType: "SmartFilling" | "PreviousValue" | "NoFilling" | string;
-    customFillValue?: number;
+    fillType: "SmartFilling" | "PreviousValue" | "NoFilling";
 } | {
     fillType: "CustomValue";
     customFillValue: number;
 };
-
-// @public
-export interface DataFeedOptions {
-    accessMode?: DataFeedAccessMode;
-    actionLinkTemplate?: string;
-    adminEmails?: string[];
-    description?: string;
-    missingDataPointFillSettings?: DataFeedMissingDataPointFillSettings;
-    rollupSettings?: DataFeedRollupSettings;
-    viewerEmails?: string[];
-}
 
 // @public
 export type DataFeedPatch = {
@@ -284,12 +322,18 @@ export type DataFeedPatch = {
         timestampColumn?: string;
     };
     ingestionSettings?: DataFeedIngestionSettings;
-} & DataFeedOptions & {
+    description?: string;
+    rollupSettings?: DataFeedRollupSettings;
+    missingDataPointFillSettings?: DataFeedMissingDataPointFillSettings;
+    accessMode?: DataFeedAccessMode;
+    adminEmails?: string[];
+    viewerEmails?: string[];
+    actionLinkTemplate?: string;
     status?: DataFeedDetailStatus;
 };
 
 // @public
-export type DataFeedRollupMethod = "None" | "Sum" | "Max" | "Min" | "Avg" | "Count" | string;
+export type DataFeedRollupMethod = "None" | "Sum" | "Max" | "Min" | "Avg" | "Count";
 
 // @public
 export type DataFeedRollupSettings = {
@@ -312,11 +356,11 @@ export interface DataFeedSchema {
 }
 
 // @public
-export type DataFeedSource = AzureApplicationInsightsDataFeedSource | AzureBlobDataFeedSource | AzureCosmosDBDataFeedSource | AzureDataExplorerDataFeedSource | AzureDataLakeStorageGen2DataFeedSource | AzureTableDataFeedSource | ElasticsearchDataFeedSource | HttpRequestDataFeedSource | InfluxDBDataFeedSource | MySqlDataFeedSource | PostgreSqlDataFeedSource | SQLServerDataFeedSource | MongoDBDataFeedSource | UnknownDataFeedSource;
+export type DataFeedSource = AzureApplicationInsightsDataFeedSource | AzureBlobDataFeedSource | AzureCosmosDbDataFeedSource | AzureDataExplorerDataFeedSource | AzureDataLakeStorageGen2DataFeedSource | AzureTableDataFeedSource | InfluxDbDataFeedSource | MySqlDataFeedSource | PostgreSqlDataFeedSource | SqlServerDataFeedSource | MongoDbDataFeedSource | AzureLogAnalyticsDataFeedSource | AzureEventHubsDataFeedSource | UnknownDataFeedSource;
 
 // @public
-export type DataFeedSourcePatch = Omit<DataFeedSource, "dataSourceParameter"> & {
-    [P in "dataSourceParameter"]?: DataFeedSource[P];
+export type DataFeedSourcePatch = Partial<DataFeedSource> & {
+    dataSourceType: DataFeedSource["dataSourceType"];
 };
 
 // @public
@@ -328,23 +372,82 @@ export interface DataFeedsPageResponse extends Array<DataFeed> {
     };
 }
 
-// @public (undocumented)
-export type DataFeedStatus = "Paused" | "Active" | string;
+// @public
+export type DataFeedStatus = "Paused" | "Active";
+
+// @public
+export interface DataLakeGen2SharedKeyDatasourceCredential extends DatasourceCredential {
+    accountKey: string;
+    type: "DataLakeGen2SharedKey";
+}
+
+// @public
+export interface DataLakeGen2SharedKeyDatasourceCredentialPatch {
+    accountKey?: string;
+    description?: string;
+    name?: string;
+    type: "DataLakeGen2SharedKey";
+}
+
+// @public
+export type DataLakeStorageGen2AuthBasic = {
+    authenticationType: "Basic";
+    accountKey: string;
+};
+
+// @public
+export type DataLakeStorageGen2AuthManagedIdentity = {
+    authenticationType: "ManagedIdentity";
+};
+
+// @public
+export type DataLakeStorageGen2AuthServicePrincipal = {
+    authenticationType: "ServicePrincipal";
+    credentialId: string;
+};
+
+// @public
+export type DataLakeStorageGen2AuthServicePrincipalInKeyVault = {
+    authenticationType: "ServicePrincipalInKV";
+    credentialId: string;
+};
+
+// @public
+export type DataLakeStorageGen2AuthSharedKey = {
+    authenticationType: "DataLakeGen2SharedKey";
+    credentialId: string;
+};
 
 // @public
 export interface DataPointAnomaly {
     createdOn?: Date;
+    readonly dataFeedId?: string;
     detectionConfigurationId: string;
+    readonly expectedValue?: number;
     metricId?: string;
     modifiedOn?: Date;
     seriesKey: DimensionKey;
     severity: AnomalySeverity;
     status?: AnomalyStatus;
     timestamp: number;
+    readonly value?: number;
 }
 
 // @public
-export type DataSourceType = string;
+export interface DatasourceCredential {
+    description?: string;
+    readonly id?: string;
+    name: string;
+}
+
+// @public
+export type DatasourceCredentialPatch = SqlServerConnectionStringDatasourceCredentialPatch | DataLakeGen2SharedKeyDatasourceCredentialPatch | ServicePrincipalDatasourceCredentialPatch | ServicePrincipalInKeyVaultDatasourceCredentialPatch;
+
+// @public (undocumented)
+export type DatasourceCredentialUnion = SqlServerConnectionStringDatasourceCredential | DataLakeGen2SharedKeyDatasourceCredential | ServicePrincipalDatasourceCredential | ServicePrincipalInKeyVaultDatasourceCredential;
+
+// @public
+export type DataSourceType = "AzureApplicationInsights" | "AzureBlob" | "AzureCosmosDB" | "AzureDataExplorer" | "AzureDataLakeStorageGen2" | "AzureEventHubs" | "AzureLogAnalytics" | "AzureTable" | "InfluxDB" | "MongoDB" | "MySql" | "PostgreSql" | "SqlServer";
 
 // @public
 export interface DetectionConditionsCommon {
@@ -355,7 +458,15 @@ export interface DetectionConditionsCommon {
 }
 
 // @public
-export type DetectionConditionsOperator = "AND" | "OR" | string;
+export interface DetectionConditionsCommonPatch {
+    changeThresholdCondition?: Partial<ChangeThresholdConditionUnion>;
+    conditionOperator?: DetectionConditionsOperator;
+    hardThresholdCondition?: Partial<HardThresholdConditionUnion>;
+    smartDetectionCondition?: Partial<SmartDetectionCondition>;
+}
+
+// @public
+export type DetectionConditionsOperator = "AND" | "OR";
 
 // @public
 export interface DetectionConfigurationsPageResponse extends Array<AnomalyDetectionConfiguration> {
@@ -377,20 +488,6 @@ export interface DimensionValuesPageResponse extends Array<string> {
     };
 }
 
-// @public
-export type ElasticsearchDataFeedSource = {
-    dataSourceType: "Elasticsearch";
-    dataSourceParameter: ElasticsearchParameter;
-};
-
-// @public (undocumented)
-export interface ElasticsearchParameter {
-    authHeader: string;
-    host: string;
-    port: string;
-    query: string;
-}
-
 // @public (undocumented)
 export interface EmailHookParameter {
     toList: string[];
@@ -405,7 +502,7 @@ export type EmailNotificationHook = {
 // @public
 export type EmailNotificationHookPatch = {
     hookType: "Email";
-    hookParameter?: EmailHookParameter;
+    hookParameter?: Partial<EmailHookParameter>;
 } & NotificationHookPatch;
 
 // @public (undocumented)
@@ -416,10 +513,10 @@ export interface EnrichmentStatus {
 }
 
 // @public
-export type FeedbackQueryTimeMode = string;
+export type FeedbackQueryTimeMode = "MetricTimestamp" | "FeedbackCreatedTime";
 
 // @public
-export type FeedbackType = string;
+export type FeedbackType = "Anomaly" | "ChangePoint" | "Period" | "Comment";
 
 // @public
 export type GetAnomalyAlertConfigurationResponse = AnomalyAlertConfiguration & {
@@ -431,6 +528,14 @@ export type GetAnomalyAlertConfigurationResponse = AnomalyAlertConfiguration & {
 
 // @public
 export type GetAnomalyDetectionConfigurationResponse = AnomalyDetectionConfiguration & {
+    _response: coreHttp.HttpResponse & {
+        bodyAsText: string;
+        parsedBody: any;
+    };
+};
+
+// @public
+export type GetCredentialEntityResponse = DatasourceCredentialUnion & {
     _response: coreHttp.HttpResponse & {
         bodyAsText: string;
         parsedBody: any;
@@ -482,7 +587,8 @@ export type GetIngestionProgressResponse = {
 };
 
 // @public
-export type GetMetricEnrichedSeriesDataOptions = OperationOptions;
+export interface GetMetricEnrichedSeriesDataOptions extends OperationOptions {
+}
 
 // @public
 export interface GetMetricEnrichedSeriesDataResponse extends Array<MetricEnrichedSeriesData> {
@@ -493,7 +599,8 @@ export interface GetMetricEnrichedSeriesDataResponse extends Array<MetricEnriche
 }
 
 // @public
-export type GetMetricSeriesDataOptions = OperationOptions;
+export interface GetMetricSeriesDataOptions extends OperationOptions {
+}
 
 // @public
 export interface GetMetricSeriesDataResponse extends Array<MetricSeriesData> {
@@ -530,20 +637,6 @@ export interface HooksPageResponse extends Array<NotificationHookUnion> {
 }
 
 // @public
-export type HttpRequestDataFeedSource = {
-    dataSourceType: "HttpRequest";
-    dataSourceParameter: HttpRequestParameter;
-};
-
-// @public (undocumented)
-export interface HttpRequestParameter {
-    httpHeader: string;
-    httpMethod: string;
-    payload: string;
-    url: string;
-}
-
-// @public
 export interface IncidentRootCause {
     description: string;
     path: string[];
@@ -561,19 +654,15 @@ export interface IncidentsPageResponse extends Array<AnomalyIncident> {
 }
 
 // @public
-export type InfluxDBDataFeedSource = {
+export type InfluxDbDataFeedSource = {
     dataSourceType: "InfluxDB";
-    dataSourceParameter: InfluxDBParameter;
-};
-
-// @public (undocumented)
-export interface InfluxDBParameter {
     connectionString: string;
     database: string;
+    userName: string;
     password: string;
     query: string;
-    userName: string;
-}
+    authenticationType: "Basic";
+};
 
 // @public (undocumented)
 export interface IngestionStatus {
@@ -592,155 +681,39 @@ export interface IngestionStatusPageResponse extends Array<IngestionStatus> {
 }
 
 // @public
-export type IngestionStatusType = string;
+export type IngestionStatusType = "NotStarted" | "Scheduled" | "Running" | "Succeeded" | "Failed" | "NoData" | "Error" | "Paused";
 
 // @public
-export const enum KnownAnomalyDetectorDirection {
-    // (undocumented)
-    Both = "Both",
-    // (undocumented)
-    Down = "Down",
-    // (undocumented)
-    Up = "Up"
-}
-
-// @public
-export const enum KnownAnomalyValue {
-    // (undocumented)
-    Anomaly = "Anomaly",
-    // (undocumented)
-    AutoDetect = "AutoDetect",
-    // (undocumented)
-    NotAnomaly = "NotAnomaly"
-}
-
-// @public
-export const enum KnownDataFeedDetailStatus {
-    // (undocumented)
-    Active = "Active",
-    // (undocumented)
-    Paused = "Paused"
-}
-
-// @public
-export const enum KnownDataSourceType {
-    // (undocumented)
-    AzureApplicationInsights = "AzureApplicationInsights",
-    // (undocumented)
-    AzureBlob = "AzureBlob",
-    // (undocumented)
-    AzureCosmosDB = "AzureCosmosDB",
-    // (undocumented)
-    AzureDataExplorer = "AzureDataExplorer",
-    // (undocumented)
-    AzureDataLakeStorageGen2 = "AzureDataLakeStorageGen2",
-    // (undocumented)
-    AzureTable = "AzureTable",
-    // (undocumented)
-    Elasticsearch = "Elasticsearch",
-    // (undocumented)
-    HttpRequest = "HttpRequest",
-    // (undocumented)
-    InfluxDB = "InfluxDB",
-    // (undocumented)
-    MongoDB = "MongoDB",
-    // (undocumented)
-    MySql = "MySql",
-    // (undocumented)
-    PostgreSql = "PostgreSql",
-    // (undocumented)
-    SqlServer = "SqlServer"
-}
-
-// @public
-export const enum KnownFeedbackQueryTimeMode {
-    // (undocumented)
-    FeedbackCreatedTime = "FeedbackCreatedTime",
-    // (undocumented)
-    MetricTimestamp = "MetricTimestamp"
-}
-
-// @public
-export const enum KnownFeedbackType {
-    // (undocumented)
-    Anomaly = "Anomaly",
-    // (undocumented)
-    ChangePoint = "ChangePoint",
-    // (undocumented)
-    Comment = "Comment",
-    // (undocumented)
-    Period = "Period"
-}
-
-// @public
-export const enum KnownIngestionStatusType {
-    // (undocumented)
-    Error = "Error",
-    // (undocumented)
-    Failed = "Failed",
-    // (undocumented)
-    NoData = "NoData",
-    // (undocumented)
-    NotStarted = "NotStarted",
-    // (undocumented)
-    Paused = "Paused",
-    // (undocumented)
-    Running = "Running",
-    // (undocumented)
-    Scheduled = "Scheduled",
-    // (undocumented)
-    Succeeded = "Succeeded"
-}
-
-// @public
-export const enum KnownSeverity {
-    // (undocumented)
-    High = "High",
-    // (undocumented)
-    Low = "Low",
-    // (undocumented)
-    Medium = "Medium"
-}
-
-// @public
-export const enum KnownSnoozeScope {
-    // (undocumented)
-    Metric = "Metric",
-    // (undocumented)
-    Series = "Series"
-}
-
-// @public
-export type ListAlertsOptions = {
+export interface ListAlertsOptions extends OperationOptions {
     skip?: number;
-} & OperationOptions;
+}
 
 // @public
-export type ListAnomaliesForAlertConfigurationOptions = {
+export interface ListAnomaliesForAlertConfigurationOptions extends OperationOptions {
     skip?: number;
-} & OperationOptions;
+}
 
 // @public
-export type ListAnomaliesForDetectionConfigurationOptions = {
-    skip?: number;
+export interface ListAnomaliesForDetectionConfigurationOptions extends OperationOptions {
     dimensionFilter?: DimensionKey[];
     severityFilter?: SeverityFilterCondition;
-} & OperationOptions;
+    skip?: number;
+}
 
 // @public
-export type ListAnomalyDimensionValuesOptions = {
-    skip?: number;
+export interface ListAnomalyDimensionValuesOptions extends OperationOptions {
+    // (undocumented)
     dimensionFilter?: DimensionKey;
-} & OperationOptions;
+    skip?: number;
+}
 
 // @public
-export type ListDataFeedIngestionStatusOptions = {
+export interface ListDataFeedIngestionStatusOptions extends OperationOptions {
     skip?: number;
-} & OperationOptions;
+}
 
 // @public
-export type ListDataFeedsOptions = {
-    skip?: number;
+export interface ListDataFeedsOptions extends OperationOptions {
     filter?: {
         dataFeedName?: string;
         dataSourceType?: DataSourceType;
@@ -748,11 +721,16 @@ export type ListDataFeedsOptions = {
         status?: DataFeedStatus;
         creator?: string;
     };
-} & OperationOptions;
+    skip?: number;
+}
 
 // @public
-export type ListFeedbackOptions = {
+export interface ListDatasourceCredentialsOptions extends OperationOptions {
     skip?: number;
+}
+
+// @public
+export interface ListFeedbackOptions extends OperationOptions {
     filter?: {
         dimensionFilter?: DimensionKey;
         feedbackType?: FeedbackType;
@@ -760,58 +738,76 @@ export type ListFeedbackOptions = {
         endTime?: Date | string;
         timeMode?: FeedbackQueryTimeMode;
     };
-} & OperationOptions;
+    skip?: number;
+}
 
 // @public
-export type ListHooksOptions = {
-    skip?: number;
+export interface ListHooksOptions extends OperationOptions {
     hookName?: string;
-} & OperationOptions;
-
-// @public
-export type ListIncidentsForAlertOptions = {
     skip?: number;
-} & OperationOptions;
+}
 
 // @public
-export type ListIncidentsForDetectionConfigurationOptions = {
+export interface ListIncidentsForAlertOptions extends OperationOptions {
+    skip?: number;
+}
+
+// @public
+export interface ListIncidentsForDetectionConfigurationOptions extends OperationOptions {
     dimensionFilter?: DimensionKey[];
-} & OperationOptions;
+}
 
 // @public
-export type ListMetricDimensionValuesOptions = {
-    skip?: number;
+export interface ListMetricDimensionValuesOptions extends OperationOptions {
     dimensionValueFilter?: string;
-} & OperationOptions;
+    skip?: number;
+}
 
 // @public
-export type ListMetricEnrichmentStatusOptions = {
+export interface ListMetricEnrichmentStatusOptions extends OperationOptions {
     skip?: number;
-} & OperationOptions;
+}
 
 // @public
-export type ListMetricSeriesDefinitionsOptions = {
-    skip?: number;
+export interface ListMetricSeriesDefinitionsOptions extends OperationOptions {
     dimensionFilter?: Record<string, string[]>;
-} & OperationOptions;
+    skip?: number;
+}
+
+// @public
+export type LogAnalyticsAuthBasic = {
+    authenticationType: "Basic";
+};
+
+// @public
+export type LogAnalyticsAuthServicePrincipal = {
+    authenticationType: "ServicePrincipal";
+    credentialId: string;
+};
+
+// @public
+export type LogAnalyticsAuthServicePrincipalInKeyVault = {
+    authenticationType: "ServicePrincipalInKV";
+    credentialId: string;
+};
 
 // @public (undocumented)
-export interface MetricAlertConditions {
+export interface MetricAlertConfiguration {
+    alertConditions?: MetricAnomalyAlertConditions;
+    alertScope: MetricAnomalyAlertScope;
+    detectionConfigurationId: string;
+    negationOperation?: boolean;
+    snoozeCondition?: MetricAnomalyAlertSnoozeCondition;
+}
+
+// @public (undocumented)
+export interface MetricAnomalyAlertConditions {
     metricBoundaryCondition?: MetricBoundaryCondition;
     severityCondition?: SeverityCondition;
 }
 
-// @public (undocumented)
-export interface MetricAlertConfiguration {
-    alertConditions?: MetricAlertConditions;
-    alertScope: MetricAnomalyAlertScope;
-    detectionConfigurationId: string;
-    negationOperation?: boolean;
-    snoozeCondition?: AlertSnoozeCondition;
-}
-
 // @public
-export type MetricAnomalyAlertConfigurationsOperator = "AND" | "OR" | "XOR" | string;
+export type MetricAnomalyAlertConfigurationsOperator = "AND" | "OR" | "XOR";
 
 // @public
 export type MetricAnomalyAlertScope = {
@@ -824,12 +820,19 @@ export type MetricAnomalyAlertScope = {
     topNAnomalyScope: TopNGroupScope;
 };
 
+// @public (undocumented)
+export interface MetricAnomalyAlertSnoozeCondition {
+    autoSnooze: number;
+    onlyForSuccessive: boolean;
+    snoozeScope: SnoozeScope;
+}
+
 // @public
 export type MetricAnomalyFeedback = {
     feedbackType: "Anomaly";
     startTime: Date;
     endTime: Date;
-    value: "AutoDetect" | "Anomaly" | "NotAnomaly" | string;
+    value: "AutoDetect" | "Anomaly" | "NotAnomaly";
     readonly anomalyDetectionConfigurationId?: string;
     readonly anomalyDetectionConfigurationSnapshot?: AnomalyDetectionConfiguration;
 } & MetricFeedbackCommon;
@@ -840,24 +843,27 @@ export type MetricBoundaryCondition = {
     lower: number;
     metricId?: string;
     triggerForMissing?: boolean;
+    type?: "Value" | "Mean";
 } | {
     direction: "Up";
     upper: number;
     metricId?: string;
     triggerForMissing?: boolean;
+    type?: "Value" | "Mean";
 } | {
     lower: number;
     upper: number;
     direction: "Both";
     metricId?: string;
     triggerForMissing?: boolean;
+    type?: "Value" | "Mean";
 };
 
 // @public
 export type MetricChangePointFeedback = {
     feedbackType: "ChangePoint";
     startTime: Date;
-    value: "AutoDetect" | "ChangePoint" | "NotChangePoint" | string;
+    value: "AutoDetect" | "ChangePoint" | "NotChangePoint";
 } & MetricFeedbackCommon;
 
 // @public
@@ -870,6 +876,9 @@ export type MetricCommentFeedback = {
 
 // @public
 export type MetricDetectionCondition = DetectionConditionsCommon;
+
+// @public
+export type MetricDetectionConditionPatch = DetectionConditionsCommonPatch;
 
 // @public
 export interface MetricEnrichedSeriesData {
@@ -916,7 +925,7 @@ export type MetricFeedbackUnion = MetricAnomalyFeedback | MetricChangePointFeedb
 // @public
 export type MetricPeriodFeedback = {
     feedbackType: "Period";
-    periodType: "AutoDetect" | "AssignValue" | string;
+    periodType: "AutoDetect" | "AssignValue";
     periodValue: number;
 } & MetricFeedbackCommon;
 
@@ -924,28 +933,33 @@ export type MetricPeriodFeedback = {
 export class MetricsAdvisorAdministrationClient {
     constructor(endpointUrl: string, credential: TokenCredential | MetricsAdvisorKeyCredential, options?: MetricsAdvisorAdministrationClientOptions);
     createAlertConfig(config: Omit<AnomalyAlertConfiguration, "id">, options?: OperationOptions): Promise<GetAnomalyAlertConfigurationResponse>;
-    createDataFeed(feed: DataFeedDescriptor, operationOptions?: OperationOptions): Promise<GetDataFeedResponse>;
+    createDataFeed(feed: DataFeedDescriptor, operationOptions?: CreateDataFeedOptions): Promise<GetDataFeedResponse>;
+    createDatasourceCredential(datasourceCredential: DatasourceCredentialUnion, options?: OperationOptions): Promise<GetCredentialEntityResponse>;
     createDetectionConfig(config: Omit<AnomalyDetectionConfiguration, "id">, options?: OperationOptions): Promise<GetAnomalyDetectionConfigurationResponse>;
     createHook(hookInfo: EmailNotificationHook | WebNotificationHook, options?: OperationOptions): Promise<GetHookResponse>;
     deleteAlertConfig(id: string, options?: OperationOptions): Promise<RestResponse>;
     deleteDataFeed(id: string, options?: OperationOptions): Promise<RestResponse>;
+    deleteDatasourceCredential(id: string, options?: OperationOptions): Promise<RestResponse>;
     deleteDetectionConfig(id: string, options?: OperationOptions): Promise<RestResponse>;
     deleteHook(id: string, options?: OperationOptions): Promise<RestResponse>;
     readonly endpointUrl: string;
     getAlertConfig(id: string, options?: OperationOptions): Promise<GetAnomalyAlertConfigurationResponse>;
     getDataFeed(id: string, options?: OperationOptions): Promise<GetDataFeedResponse>;
     getDataFeedIngestionProgress(dataFeedId: string, options?: {}): Promise<GetIngestionProgressResponse>;
+    getDatasourceCredential(id: string, options?: OperationOptions): Promise<GetCredentialEntityResponse>;
     getDetectionConfig(id: string, options?: OperationOptions): Promise<GetAnomalyDetectionConfigurationResponse>;
     getHook(id: string, options?: OperationOptions): Promise<GetHookResponse>;
     listAlertConfigs(detectionConfigId: string, options?: OperationOptions): PagedAsyncIterableIterator<AnomalyAlertConfiguration, AlertConfigurationsPageResponse, undefined>;
     listDataFeedIngestionStatus(dataFeedId: string, startTime: Date | string, endTime: Date | string, options?: ListDataFeedIngestionStatusOptions): PagedAsyncIterableIterator<IngestionStatus, IngestionStatusPageResponse>;
     listDataFeeds(options?: ListDataFeedsOptions): PagedAsyncIterableIterator<DataFeed, DataFeedsPageResponse>;
+    listDatasourceCredential(options?: ListDatasourceCredentialsOptions): PagedAsyncIterableIterator<DatasourceCredentialUnion, CredentialsPageResponse>;
     listDetectionConfigs(metricId: string, options?: OperationOptions): PagedAsyncIterableIterator<AnomalyDetectionConfiguration, DetectionConfigurationsPageResponse, undefined>;
     listHooks(options?: ListHooksOptions): PagedAsyncIterableIterator<NotificationHookUnion, HooksPageResponse>;
     refreshDataFeedIngestion(dataFeedId: string, startTime: Date | string, endTime: Date | string, options?: OperationOptions): Promise<RestResponse>;
     updateAlertConfig(id: string, patch: Partial<Omit<AnomalyAlertConfiguration, "id">>, options?: OperationOptions): Promise<RestResponse>;
     updateDataFeed(dataFeedId: string, patch: DataFeedPatch, options?: OperationOptions): Promise<RestResponse>;
-    updateDetectionConfig(id: string, patch: Partial<Omit<AnomalyDetectionConfiguration, "id" | "metricId">>, options?: OperationOptions): Promise<RestResponse>;
+    updateDatasourceCredential(id: string, patch: DatasourceCredentialPatch, options?: OperationOptions): Promise<RestResponse>;
+    updateDetectionConfig(id: string, patch: AnomalyDetectionConfigurationPatch, options?: OperationOptions): Promise<RestResponse>;
     updateHook(id: string, patch: EmailNotificationHookPatch | WebNotificationHookPatch, options?: OperationOptions): Promise<RestResponse>;
 }
 
@@ -983,8 +997,13 @@ export class MetricsAdvisorKeyCredential {
     constructor(subscriptionKey: string, apiKey: string);
     get apiKey(): string;
     get subscriptionKey(): string;
-    updateApiKey(apiKey: string): void;
-    updateSubscriptionKey(subscriptionKey: string): void;
+    updateKey(metricAdvisorKeys: MetricsAdvisorKeys): void;
+}
+
+// @public
+export interface MetricsAdvisorKeys {
+    apiKey?: string;
+    subscriptionKey?: string;
 }
 
 // @public
@@ -1020,22 +1039,20 @@ export type MetricSingleSeriesDetectionCondition = DetectionConditionsCommon & {
 };
 
 // @public
-export type MongoDBDataFeedSource = {
+export type MongoDbDataFeedSource = {
     dataSourceType: "MongoDB";
-    dataSourceParameter: MongoDBParameter;
-};
-
-// @public (undocumented)
-export interface MongoDBParameter {
-    command: string;
     connectionString: string;
     database: string;
-}
+    command: string;
+    authenticationType: "Basic";
+};
 
 // @public
 export type MySqlDataFeedSource = {
     dataSourceType: "MySql";
-    dataSourceParameter: SqlSourceParameter;
+    connectionString?: string;
+    query: string;
+    authenticationType: "Basic";
 };
 
 // @public
@@ -1060,11 +1077,55 @@ export type NotificationHookUnion = EmailNotificationHook | WebNotificationHook;
 // @public
 export type PostgreSqlDataFeedSource = {
     dataSourceType: "PostgreSql";
-    dataSourceParameter: SqlSourceParameter;
+    connectionString?: string;
+    query: string;
+    authenticationType: "Basic";
 };
 
 // @public
-export type Severity = string;
+export interface ServicePrincipalDatasourceCredential extends DatasourceCredential {
+    clientId: string;
+    clientSecret: string;
+    tenantId: string;
+    type: "ServicePrincipal";
+}
+
+// @public
+export interface ServicePrincipalDatasourceCredentialPatch {
+    clientId?: string;
+    clientSecret?: string;
+    description?: string;
+    name?: string;
+    tenantId?: string;
+    type: "ServicePrincipal";
+}
+
+// @public
+export interface ServicePrincipalInKeyVaultDatasourceCredential extends DatasourceCredential {
+    keyVaultClientId: string;
+    keyVaultClientSecret: string;
+    keyVaultEndpoint: string;
+    servicePrincipalIdNameInKV: string;
+    servicePrincipalSecretNameInKV: string;
+    tenantId: string;
+    type: "ServicePrincipalInKV";
+}
+
+// @public
+export interface ServicePrincipalInKeyVaultDatasourceCredentialPatch {
+    description?: string;
+    keyVaultClientId?: string;
+    keyVaultClientSecret?: string;
+    keyVaultEndpoint?: string;
+    name?: string;
+    servicePrincipalIdNameInKV?: string;
+    servicePrincipalSecretNameInKV?: string;
+    tenantId?: string;
+    type: "ServicePrincipalInKV";
+}
+
+// @public
+export type Severity = "Low" | "Medium" | "High";
 
 // @public (undocumented)
 export interface SeverityCondition {
@@ -1087,19 +1148,62 @@ export interface SmartDetectionCondition {
 }
 
 // @public
-export type SnoozeScope = string;
+export type SnoozeScope = "Metric" | "Series";
 
 // @public
-export type SQLServerDataFeedSource = {
-    dataSourceType: "SqlServer";
-    dataSourceParameter: SqlSourceParameter;
-};
-
-// @public (undocumented)
-export interface SqlSourceParameter {
+export interface SqlServerAuthBasic {
+    authenticationType: "Basic";
     connectionString: string;
-    query: string;
 }
+
+// @public
+export interface SqlServerAuthConnectionString {
+    authenticationType: "AzureSQLConnectionString";
+    credentialId: string;
+}
+
+// @public
+export interface SqlServerAuthManagedIdentity {
+    authenticationType: "ManagedIdentity";
+    connectionString: string;
+}
+
+// @public
+export interface SqlServerAuthServicePrincipal {
+    authenticationType: "ServicePrincipal";
+    connectionString: string;
+    credentialId: string;
+}
+
+// @public
+export interface SqlServerAuthServicePrincipalInKeyVault {
+    authenticationType: "ServicePrincipalInKV";
+    connectionString: string;
+    credentialId: string;
+}
+
+// @public
+export type SqlServerAuthTypes = SqlServerAuthBasic | SqlServerAuthManagedIdentity | SqlServerAuthConnectionString | SqlServerAuthServicePrincipal | SqlServerAuthServicePrincipalInKeyVault;
+
+// @public
+export interface SqlServerConnectionStringDatasourceCredential extends DatasourceCredential {
+    connectionString: string;
+    type: "AzureSQLConnectionString";
+}
+
+// @public
+export interface SqlServerConnectionStringDatasourceCredentialPatch {
+    connectionString?: string;
+    description?: string;
+    name?: string;
+    type: "AzureSQLConnectionString";
+}
+
+// @public
+export type SqlServerDataFeedSource = {
+    dataSourceType: "SqlServer";
+    query: string;
+} & SqlServerAuthTypes;
 
 // @public (undocumented)
 export interface SuppressCondition {
@@ -1118,6 +1222,7 @@ export interface TopNGroupScope {
 export type UnknownDataFeedSource = {
     dataSourceType: "Unknown";
     dataSourceParameter: unknown;
+    authenticationType: "Basic";
 };
 
 // @public (undocumented)
@@ -1141,7 +1246,7 @@ export type WebNotificationHook = {
 // @public
 export type WebNotificationHookPatch = {
     hookType: "Webhook";
-    hookParameter?: WebhookHookParameter;
+    hookParameter?: Partial<WebhookHookParameter>;
 } & NotificationHookPatch;
 
 

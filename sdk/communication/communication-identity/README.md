@@ -15,6 +15,12 @@ The identity library is used for managing users and tokens for Azure Communicati
 npm install @azure/communication-identity
 ```
 
+### Browser support
+
+#### JavaScript Bundle
+
+To use this client library in the browser, first you need to use a bundler. For details on how to do this, please refer to our [bundling documentation](https://aka.ms/AzureSDKBundling).
+
 ## Key concepts
 
 ### Clients
@@ -49,6 +55,7 @@ const client = new CommunicationIdentityClient(connectionString);
 ### Using a `TokenCredential`
 
 ```typescript
+import { DefaultAzureCredential } from "@azure/identity";
 import { CommunicationIdentityClient } from "@azure/communication-identity";
 
 const credential = new DefaultAzureCredential();
@@ -89,15 +96,15 @@ let { token } = await client.getToken(user, ["chat"]);
 To refresh the user token, issue another token with the same user.
 
 ```typescript
-{ token } = await client.getToken(user, ["chat"]);
+let { token } = await client.getToken(user, ["chat"]);
 ```
 
-### Creating a user together with a token in a single request
+### Creating a user and a token in a single request
 
-For convenience, use `createUserWithToken` to create a new user and issue a token with one function call. This translates into a single web request as opposed to creating a user first and then issuing a token.
+For convenience, use `createUserAndToken` to create a new user and issue a token with one function call. This translates into a single web request as opposed to creating a user first and then issuing a token.
 
 ```typescript
-let { user, token } = await client.createUserWithToken(["chat"]);
+let { user, token } = await client.createUserAndToken(["chat"]);
 ```
 
 ### Revoking tokens for a user

@@ -4,6 +4,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 
 import { assert } from "chai";
+import { Suite, Context } from "mocha";
 
 import { isPlaybackMode, Recorder } from "@azure/test-utils-recorder";
 
@@ -13,13 +14,12 @@ import {
   TextDocumentInput,
   DetectLanguageInput,
   DetectLanguageSuccessResult,
-  ExtractKeyPhrasesSuccessResult,
   AnalyzeSentimentResultArray,
   AnalyzeSentimentSuccessResult,
   SentenceSentiment,
   Opinion,
   AssessmentSentiment,
-  PiiEntityDomainType
+  PiiEntityDomain
 } from "../../src";
 import { assertAllSuccess, isSuccess } from "./utils/resultHelper";
 import { checkEntityTextOffset, checkOffsetAndLength } from "./utils/stringIndexTypeHelpers";
@@ -35,17 +35,15 @@ const testDataEs = [
   "Los caminos que llevan hasta Monte Rainier son espectaculares y hermosos.",
   "La carretera estaba atascada. Había mucho tráfico el día de ayer."
 ];
-describe("[AAD] TextAnalyticsClient", function() {
+describe("[AAD] TextAnalyticsClient", function(this: Suite) {
   let recorder: Recorder;
   let client: TextAnalyticsClient;
-  // eslint-disable-next-line no-invalid-this
   const CLITimeout = this.timeout();
   const fastTimeout = 10000;
 
   let getId: () => string;
 
-  beforeEach(function() {
-    // eslint-disable-next-line no-invalid-this
+  beforeEach(function(this: Context) {
     recorder = createRecorder(this);
     client = createClient("AAD");
     let nextId = 0;
@@ -60,8 +58,7 @@ describe("[AAD] TextAnalyticsClient", function() {
   });
 
   describe("fast tests", function() {
-    before(function() {
-      // eslint-disable-next-line no-invalid-this
+    before(function(this: Context) {
       this.timeout(fastTimeout);
     });
 
@@ -481,15 +478,6 @@ describe("[AAD] TextAnalyticsClient", function() {
         assert.equal(result.error.code, "UnsupportedLanguageCode");
       });
 
-      it("service reports warning for long words", async function() {
-        const results = await client.extractKeyPhrases([
-          "Hello world, thisisanextremelymassivesequenceoflettersthatislongerthansixtyfourcharacters."
-        ]);
-        assertAllSuccess(results);
-        const result = results[0] as ExtractKeyPhrasesSuccessResult;
-        assert.equal(result.warnings[0].code, "LongWordsInDocument");
-      });
-
       it("client accepts mixed-language TextDocumentInput[]", async function() {
         const enInputs = testDataEn.map(
           (text): TextDocumentInput => ({
@@ -589,7 +577,7 @@ describe("[AAD] TextAnalyticsClient", function() {
               language: "en"
             }
           ],
-          { domainFilter: PiiEntityDomainType.PROTECTED_HEALTH_INFORMATION }
+          { domainFilter: PiiEntityDomain.PROTECTED_HEALTH_INFORMATION }
         );
         if (!result.error) {
           assert.equal(result.entities.length, 2);
@@ -880,47 +868,47 @@ describe("[AAD] TextAnalyticsClient", function() {
           await checkOffsetAndLength(client, "ơ̵̧̧̢̳̘̘͕͔͕̭̟̙͎͈̞͔̈̇̒̃͋̇̅͛̋͛̎́͑̄̐̂̎͗͝m̵͍͉̗̄̏͌̂̑̽̕͝͠g̵̢̡̢̡̨̡̧̛͉̞̯̠̤̣͕̟̫̫̼̰͓̦͖̣̣͎̋͒̈́̓̒̈̍̌̓̅͑̒̓̅̅͒̿̏́͗̀̇͛̏̀̈́̀̊̾̀̔͜͠͝ͅ SSN: 859-98-0987", "UnicodeCodePoint", 121, 11);
         });
       });
-      describe("#TextElements_v8", function() {
+      describe("#TextElement_v8", function() {
         it("emoji", async function() {
-          await checkOffsetAndLength(client, "👩 SSN: 859-98-0987", "TextElements_v8", 7, 11); // offset was 8 with UTF16
+          await checkOffsetAndLength(client, "👩 SSN: 859-98-0987", "TextElement_v8", 7, 11); // offset was 8 with UTF16
         });
 
         it("emoji with skin tone modifier", async function() {
-          await checkOffsetAndLength(client, "👩🏻 SSN: 859-98-0987", "TextElements_v8", 8, 11); // offset was 10 with UTF16
+          await checkOffsetAndLength(client, "👩🏻 SSN: 859-98-0987", "TextElement_v8", 8, 11); // offset was 10 with UTF16
         });
 
         it("family emoji", async function() {
-          await checkOffsetAndLength(client, "👩‍👩‍👧‍👧 SSN: 859-98-0987", "TextElements_v8", 13, 11); // offset was 17 with UTF16
+          await checkOffsetAndLength(client, "👩‍👩‍👧‍👧 SSN: 859-98-0987", "TextElement_v8", 13, 11); // offset was 17 with UTF16
         });
 
         it("family emoji wit skin tone modifier", async function() {
           await checkOffsetAndLength(
             client,
             "👩🏻‍👩🏽‍👧🏾‍👦🏿 SSN: 859-98-0987",
-            "TextElements_v8",
+            "TextElement_v8",
             17,
             11
           ); // offset was 25 with UTF16
         });
 
         it("diacritics nfc", async function() {
-          await checkOffsetAndLength(client, "año SSN: 859-98-0987", "TextElements_v8", 9, 11);
+          await checkOffsetAndLength(client, "año SSN: 859-98-0987", "TextElement_v8", 9, 11);
         });
 
         it("diacritics nfd", async function() {
-          await checkOffsetAndLength(client, "año SSN: 859-98-0987", "TextElements_v8", 9, 11); // offset was 10 with UTF16
+          await checkOffsetAndLength(client, "año SSN: 859-98-0987", "TextElement_v8", 9, 11); // offset was 10 with UTF16
         });
 
         it("korean nfc", async function() {
-          await checkOffsetAndLength(client, "아가 SSN: 859-98-0987", "TextElements_v8", 8, 11);
+          await checkOffsetAndLength(client, "아가 SSN: 859-98-0987", "TextElement_v8", 8, 11);
         });
 
         it("korean nfd", async function() {
-          await checkOffsetAndLength(client, "아가 SSN: 859-98-0987", "TextElements_v8", 8, 11);
+          await checkOffsetAndLength(client, "아가 SSN: 859-98-0987", "TextElement_v8", 8, 11);
         });
 
         it("zalgo", async function() {
-          await checkOffsetAndLength(client, "ơ̵̧̧̢̳̘̘͕͔͕̭̟̙͎͈̞͔̈̇̒̃͋̇̅͛̋͛̎́͑̄̐̂̎͗͝m̵͍͉̗̄̏͌̂̑̽̕͝͠g̵̢̡̢̡̨̡̧̛͉̞̯̠̤̣͕̟̫̫̼̰͓̦͖̣̣͎̋͒̈́̓̒̈̍̌̓̅͑̒̓̅̅͒̿̏́͗̀̇͛̏̀̈́̀̊̾̀̔͜͠͝ͅ SSN: 859-98-0987", "TextElements_v8", 9, 11); // offset was 121 with UTF16
+          await checkOffsetAndLength(client, "ơ̵̧̧̢̳̘̘͕͔͕̭̟̙͎͈̞͔̈̇̒̃͋̇̅͛̋͛̎́͑̄̐̂̎͗͝m̵͍͉̗̄̏͌̂̑̽̕͝͠g̵̢̡̢̡̨̡̧̛͉̞̯̠̤̣͕̟̫̫̼̰͓̦͖̣̣͎̋͒̈́̓̒̈̍̌̓̅͑̒̓̅̅͒̿̏́͗̀̇͛̏̀̈́̀̊̾̀̔͜͠͝ͅ SSN: 859-98-0987", "TextElement_v8", 9, 11); // offset was 121 with UTF16
         });
       });
     });
@@ -929,8 +917,7 @@ describe("[AAD] TextAnalyticsClient", function() {
   describe("LROs", function() {
     const pollingInterval = isPlaybackMode() ? 0 : 2000;
 
-    before(function() {
-      // eslint-disable-next-line no-invalid-this
+    before(function(this: Context) {
       this.timeout(isPlaybackMode() ? fastTimeout : CLITimeout);
     });
 
@@ -941,7 +928,7 @@ describe("[AAD] TextAnalyticsClient", function() {
           { id: "2", language: "es", text: "Microsoft fue fundado por Bill Gates y Paul Allen" }
         ];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizeEntitiesActions: [{ modelVersion: "latest" }]
@@ -977,7 +964,7 @@ describe("[AAD] TextAnalyticsClient", function() {
           { id: "2", language: "es", text: "Microsoft fue fundado por Bill Gates y Paul Allen" }
         ];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             extractKeyPhrasesActions: [{ modelVersion: "latest" }]
@@ -1027,7 +1014,7 @@ describe("[AAD] TextAnalyticsClient", function() {
           }
         ];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizeEntitiesActions: [{ modelVersion: "latest" }]
@@ -1061,6 +1048,47 @@ describe("[AAD] TextAnalyticsClient", function() {
         }
       });
 
+      it("single entities linking action", async function() {
+        const docs = [
+          "Microsoft moved its headquarters to Bellevue, Washington in January 1979.",
+          "Steve Ballmer stepped down as CEO of Microsoft and was succeeded by Satya Nadella."
+        ];
+
+        const poller = await client.beginAnalyzeActions(
+          docs,
+          {
+            recognizeLinkedEntitiesActions: [{}]
+          },
+          "en",
+          {
+            updateIntervalInMs: pollingInterval
+          }
+        );
+        const result = await poller.pollUntilDone();
+        for await (const page of result) {
+          const entitiesResult = page.recognizeLinkedEntitiesResults;
+          if (entitiesResult.length === 1) {
+            const action = entitiesResult[0];
+            if (!action.error) {
+              assert.equal(action.results.length, 2);
+              for (const doc of action.results) {
+                if (!doc.error) {
+                  assert.notEqual(doc.entities.length, 0);
+                  for (const entity of doc.entities) {
+                    assert.isDefined(entity.name);
+                    assert.isDefined(entity.url);
+                    assert.isDefined(entity.dataSource);
+                    assert.isDefined(entity.dataSourceEntityId);
+                  }
+                }
+              }
+            }
+          } else {
+            assert.fail("expected an array of entity linking results but did not get one.");
+          }
+        }
+      });
+
       it("single pii entities recognition action", async function() {
         const docs = [
           { id: "1", text: "My SSN is 859-98-0987." },
@@ -1072,7 +1100,7 @@ describe("[AAD] TextAnalyticsClient", function() {
           { id: "3", text: "Is 998.214.865-68 your Brazilian CPF number?" }
         ];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizePiiEntitiesActions: [{ modelVersion: "latest" }]
@@ -1122,10 +1150,75 @@ describe("[AAD] TextAnalyticsClient", function() {
         }
       });
 
+      it("single sentiment analysis action", async function() {
+        const docs = [
+          "The food was unacceptable",
+          "The rooms were beautiful. The AC was good and quiet.",
+          "The breakfast was good, but the toilet was smelly.",
+          "Loved this hotel - good breakfast - nice shuttle service - clean rooms.",
+          "I had a great unobstructed view of the Microsoft campus.",
+          "Nice rooms but bathrooms were old and the toilet was dirty when we arrived.",
+          "The toilet smelled."
+        ];
+
+        const poller = await client.beginAnalyzeActions(
+          docs,
+          {
+            analyzeSentimentActions: [{ includeOpinionMining: true }]
+          },
+          "en",
+          {
+            updateIntervalInMs: pollingInterval
+          }
+        );
+        const result = await poller.pollUntilDone();
+        for await (const page of result) {
+          const entitiesResult = page.analyzeSentimentResults;
+          if (entitiesResult.length === 1) {
+            const action = entitiesResult[0];
+            if (!action.error) {
+              const actionResults = action.results;
+              assert.equal(actionResults.length, 7);
+              const result1 = actionResults[0];
+              const result6 = actionResults[5];
+              const result7 = actionResults[6];
+              if (
+                result1.error === undefined &&
+                result6.error === undefined &&
+                result7.error === undefined
+              ) {
+                const Assessment1 = result1.sentences[0].opinions[0].assessments[0];
+                const Assessment2 = result6.sentences[0].opinions[0].assessments[0];
+                assert.notDeepEqual(Assessment1, Assessment2);
+
+                const listAllAssessments = (acc: string[], sentence: SentenceSentiment): string[] =>
+                  acc.concat(
+                    sentence.opinions.reduce(
+                      (assessments: string[], opinion: Opinion) =>
+                        assessments.concat(
+                          opinion.assessments.map(
+                            (assessment: AssessmentSentiment) => assessment.text
+                          )
+                        ),
+                      []
+                    )
+                  );
+                const allAssessments1 = result1.sentences.reduce(listAllAssessments, []);
+                assert.deepEqual(allAssessments1, ["unacceptable"]);
+                const allAssessments2 = result6.sentences.reduce(listAllAssessments, []);
+                assert.deepEqual(allAssessments2, ["nice", "old", "dirty"]);
+                const allAssessments7 = result7.sentences.reduce(listAllAssessments, []);
+                assert.deepEqual(allAssessments7, ["smelled"]);
+              }
+            }
+          }
+        }
+      });
+
       it("bad request empty string", async function() {
         const docs = [""];
         try {
-          const poller = await client.beginAnalyzeBatchActions(
+          const poller = await client.beginAnalyzeActions(
             docs,
             {
               recognizePiiEntitiesActions: [{ modelVersion: "latest" }]
@@ -1141,10 +1234,7 @@ describe("[AAD] TextAnalyticsClient", function() {
         }
       });
 
-      /**
-       * Analyze responds with an InvalidArgument error instead of an InvalidDocument one
-       */
-      it.skip("some documents with errors and multiple actions", async function() {
+      it("some documents with errors and multiple actions", async function() {
         const docs = [
           { id: "1", language: "", text: "" },
           {
@@ -1159,7 +1249,7 @@ describe("[AAD] TextAnalyticsClient", function() {
           }
         ];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizeEntitiesActions: [{ modelVersion: "latest" }],
@@ -1216,10 +1306,7 @@ describe("[AAD] TextAnalyticsClient", function() {
         }
       });
 
-      /**
-       * Analyze responds with an InvalidArgument error instead of an InvalidDocument one
-       */
-      it.skip("all documents with errors and multiple actions", async function() {
+      it("all documents with errors and multiple actions", async function() {
         const docs = [
           { id: "1", language: "", text: "" },
           {
@@ -1234,7 +1321,7 @@ describe("[AAD] TextAnalyticsClient", function() {
           }
         ];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizeEntitiesActions: [{ modelVersion: "latest" }],
@@ -1300,7 +1387,7 @@ describe("[AAD] TextAnalyticsClient", function() {
           { id: "5", text: "five" }
         ];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizeEntitiesActions: [{ modelVersion: "latest" }],
@@ -1366,7 +1453,7 @@ describe("[AAD] TextAnalyticsClient", function() {
           { id: "1", text: ":D" }
         ];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizeEntitiesActions: [{ modelVersion: "latest" }],
@@ -1424,9 +1511,7 @@ describe("[AAD] TextAnalyticsClient", function() {
         }
       });
 
-      /**
-       * The service does not returns statistics
-       */
+      // the service's statistics says the number of documents is 6 instead of 5.
       it.skip("statistics", async function() {
         const docs = [
           { id: "56", text: ":)" },
@@ -1436,7 +1521,7 @@ describe("[AAD] TextAnalyticsClient", function() {
           { id: "1", text: ":D" }
         ];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizeEntitiesActions: [{ modelVersion: "latest" }],
@@ -1448,11 +1533,29 @@ describe("[AAD] TextAnalyticsClient", function() {
             updateIntervalInMs: pollingInterval
           }
         );
-        const result = await poller.pollUntilDone();
-        assert.equal(result.statistics?.documentCount, 5);
-        assert.equal(result.statistics?.transactionCount, 4);
-        assert.equal(result.statistics?.validDocumentCount, 4);
-        assert.equal(result.statistics?.erroneousDocumentCount, 1);
+        const response = await poller.pollUntilDone();
+        const results = (await response.next()).value;
+        const recognizeEntitiesResults = results.recognizeEntitiesResults[0];
+        if (!recognizeEntitiesResults.error) {
+          assert.equal(recognizeEntitiesResults.results.statistics?.documentCount, 5);
+          assert.equal(recognizeEntitiesResults.results.statistics?.transactionCount, 4);
+          assert.equal(recognizeEntitiesResults.results.statistics?.validDocumentCount, 4);
+          assert.equal(recognizeEntitiesResults.results.statistics?.erroneousDocumentCount, 1);
+        }
+        const recognizePiiEntitiesResults = results.recognizePiiEntitiesResults[0];
+        if (!recognizePiiEntitiesResults.error) {
+          assert.equal(recognizePiiEntitiesResults.results.statistics?.documentCount, 5);
+          assert.equal(recognizePiiEntitiesResults.results.statistics?.transactionCount, 4);
+          assert.equal(recognizePiiEntitiesResults.results.statistics?.validDocumentCount, 4);
+          assert.equal(recognizePiiEntitiesResults.results.statistics?.erroneousDocumentCount, 1);
+        }
+        const extractKeyPhrasesResults = results.extractKeyPhrasesResults[0];
+        if (!extractKeyPhrasesResults.error) {
+          assert.equal(extractKeyPhrasesResults.results.statistics?.documentCount, 5);
+          assert.equal(extractKeyPhrasesResults.results.statistics?.transactionCount, 4);
+          assert.equal(extractKeyPhrasesResults.results.statistics?.validDocumentCount, 4);
+          assert.equal(extractKeyPhrasesResults.results.statistics?.erroneousDocumentCount, 1);
+        }
       });
 
       it("whole batch language hint", async function() {
@@ -1462,7 +1565,7 @@ describe("[AAD] TextAnalyticsClient", function() {
           "The restaurant was not as good as I hoped."
         ];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizeEntitiesActions: [{ modelVersion: "latest" }],
@@ -1496,7 +1599,7 @@ describe("[AAD] TextAnalyticsClient", function() {
           "The restaurant was not as good as I hoped."
         ];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizeEntitiesActions: [{ modelVersion: "latest" }],
@@ -1530,7 +1633,7 @@ describe("[AAD] TextAnalyticsClient", function() {
           { id: "3", text: "The restaurant had really good food." }
         ];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizeEntitiesActions: [{ modelVersion: "latest" }],
@@ -1563,7 +1666,7 @@ describe("[AAD] TextAnalyticsClient", function() {
           { id: "3", text: "猫は幸せ" }
         ];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizeEntitiesActions: [{ modelVersion: "latest" }],
@@ -1592,7 +1695,7 @@ describe("[AAD] TextAnalyticsClient", function() {
       it("invalid language hint", async function() {
         const docs = ["This should fail because we're passing in an invalid language hint"];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizeEntitiesActions: [{ modelVersion: "latest" }],
@@ -1626,53 +1729,11 @@ describe("[AAD] TextAnalyticsClient", function() {
         }
       });
 
-      it.skip("bad model", async function() {
-        const docs = [
-          {
-            id: "1",
-            language: "en",
-            text: "This should fail because we're passing in an invalid language hint"
-          }
-        ];
-
-        const poller = await client.beginAnalyzeBatchActions(
-          docs,
-          {
-            recognizeEntitiesActions: [{ modelVersion: "bad" }],
-            recognizePiiEntitiesActions: [{ modelVersion: "bad" }],
-            extractKeyPhrasesActions: [{ modelVersion: "bad" }]
-          },
-          {
-            updateIntervalInMs: pollingInterval
-          }
-        );
-        const result = await poller.pollUntilDone();
-        const firstResult = (await result.next()).value;
-        const entitiesTaskDocs = firstResult?.recognizeEntitiesResults[0];
-        if (!entitiesTaskDocs.error) {
-          for (const doc of entitiesTaskDocs.results) {
-            assert.equal(doc.error?.code, "UnknownError");
-          }
-        }
-        const piiEntitiesTaskDocs = firstResult?.recognizePiiEntitiesResults[0];
-        if (!piiEntitiesTaskDocs.error) {
-          for (const doc of piiEntitiesTaskDocs.results) {
-            assert.equal(doc.error?.code, "UnknownError");
-          }
-        }
-        const keyPhrasesTaskDocs = firstResult?.extractKeyPhrasesResults[0];
-        if (!keyPhrasesTaskDocs.error) {
-          for (const doc of keyPhrasesTaskDocs.results) {
-            assert.equal(doc.error?.code, "UnknownError");
-          }
-        }
-      });
-
       it("paged results with custom page size", async function() {
         const totalDocs = 25;
         const docs = Array(totalDocs - 1).fill("random text");
         docs.push("Microsoft was founded by Bill Gates and Paul Allen");
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizeEntitiesActions: [{ modelVersion: "latest" }],
@@ -1715,7 +1776,7 @@ describe("[AAD] TextAnalyticsClient", function() {
           { id: "3", text: "猫は幸せ" }
         ];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizePiiEntitiesActions: [{ modelVersion: "latest" }]
@@ -1749,36 +1810,32 @@ describe("[AAD] TextAnalyticsClient", function() {
           { id: "3", text: "猫は幸せ" }
         ];
 
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           docs,
           {
             recognizePiiEntitiesActions: [{ modelVersion: "latest" }]
           },
           {
-            updateIntervalInMs: pollingInterval
+            updateIntervalInMs: pollingInterval,
+            displayName: "testJob"
           }
         );
-        poller.onProgress(() => {
-          assert.ok(poller.getOperationState().createdOn, "createdOn is undefined!");
-          assert.ok(poller.getOperationState().expiresOn, "expiresOn is undefined!");
-          assert.ok(poller.getOperationState().lastModifiedOn, "lastModifiedOn is undefined!");
-          assert.ok(poller.getOperationState().status, "status is undefined!");
-          assert.ok(
-            poller.getOperationState().actionsSucceededCount,
-            "actionsSucceededCount is undefined!"
-          );
-          assert.equal(poller.getOperationState().actionsFailedCount, 0);
-          assert.isDefined(
-            poller.getOperationState().actionsInProgressCount,
-            "actionsInProgressCount is undefined!"
-          );
+        poller.onProgress((state) => {
+          assert.ok(state.createdOn, "createdOn is undefined!");
+          assert.ok(state.expiresOn, "expiresOn is undefined!");
+          assert.ok(state.lastModifiedOn, "lastModifiedOn is undefined!");
+          assert.ok(state.status, "status is undefined!");
+          assert.isDefined(state.actionsSucceededCount, "actionsSucceededCount is undefined!");
+          assert.equal(state.actionsFailedCount, 0);
+          assert.isDefined(state.actionsInProgressCount, "actionsInProgressCount is undefined!");
+          assert.equal(state.displayName, "testJob");
         });
         const result = await poller.pollUntilDone();
         assert.ok(result);
       });
 
       it("family emoji wit skin tone modifier", async function() {
-        const poller = await client.beginAnalyzeBatchActions(
+        const poller = await client.beginAnalyzeActions(
           [{ id: "0", text: "👩🏻‍👩🏽‍👧🏾‍👦🏿 SSN: 859-98-0987", language: "en" }],
           {
             recognizePiiEntitiesActions: [
@@ -1802,29 +1859,27 @@ describe("[AAD] TextAnalyticsClient", function() {
         }
       });
 
-      it("action failures are returned", async function() {
+      it("malformed actions", async function() {
         const docs = [{ id: "1", text: "I will go to the park." }];
 
-        const poller = await client.beginAnalyzeBatchActions(
-          docs,
-          {
-            recognizePiiEntitiesActions: [
-              { modelVersion: "bad" },
-              { modelVersion: "latest" },
-              { modelVersion: "bad", stringIndexType: "TextElements_v8" }
-            ]
-          },
-          {
-            updateIntervalInMs: pollingInterval
-          }
-        );
-        const result = await poller.pollUntilDone();
-        for await (const page of result) {
-          const piiEntitiesResult = page.recognizePiiEntitiesResults;
-          assert.equal(piiEntitiesResult.length, 3);
-          assert.isDefined(piiEntitiesResult[0].error);
-          assert.isUndefined(piiEntitiesResult[1].error);
-          assert.isDefined(piiEntitiesResult[2].error);
+        try {
+          await client.beginAnalyzeActions(
+            docs,
+            {
+              recognizePiiEntitiesActions: [
+                { modelVersion: "bad" },
+                { modelVersion: "latest" },
+                { modelVersion: "bad", stringIndexType: "TextElement_v8" }
+              ]
+            },
+            {
+              updateIntervalInMs: pollingInterval
+            }
+          );
+          throw new Error("Expected an error to occur");
+        } catch (e) {
+          assert.equal(e.statusCode, 400);
+          assert.equal(e.code, "InvalidRequest");
         }
       });
     });

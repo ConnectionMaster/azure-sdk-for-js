@@ -1,15 +1,21 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import { OperationOptions, RestError } from "@azure/core-http";
-import { CanonicalCode, Span, SpanContext, SpanKind } from "@opentelemetry/api";
+import { OperationOptions } from "@azure/core-http";
 import {
   createSpanFunction,
   extractSpanContextFromTraceParentHeader,
   getTraceParentHeader,
-  SpanOptions
+  SpanOptions,
+  setSpan,
+  Span,
+  SpanContext,
+  SpanKind,
+  context as otContext,
+  setSpanContext
 } from "@azure/core-tracing";
 import { ServiceBusMessage } from "../serviceBusMessage";
+import { TryAddOptions } from "../modelsToBeSharedWithEventHubs";
 
 /**
  * Creates a span using the global tracer.
@@ -19,24 +25,6 @@ export const createSpan = createSpanFunction({
   packagePrefix: "Azure.ServiceBus",
   namespace: "Microsoft.ServiceBus"
 });
-
-/**
- * @internal
- */
-export function getCanonicalCode(err: Error): CanonicalCode {
-  if (err instanceof RestError) {
-    switch (err.statusCode) {
-      case 401:
-        return CanonicalCode.PERMISSION_DENIED;
-      case 404:
-        return CanonicalCode.NOT_FOUND;
-      case 412:
-        return CanonicalCode.FAILED_PRECONDITION;
-    }
-  }
-
-  return CanonicalCode.UNKNOWN;
-}
 
 /**
  * @internal
@@ -95,7 +83,7 @@ export interface InstrumentableMessage {
    * The application specific properties which can be
    * used for custom message metadata.
    */
-  applicationProperties?: { [key: string]: number | boolean | string | Date };
+  applicationProperties?: { [key: string]: number | boolean | string | Date | null };
 }
 
 /**
@@ -178,4 +166,76 @@ export function extractSpanContextFromServiceBusMessage(
 
   const diagnosticId = message.applicationProperties[TRACEPARENT_PROPERTY] as string;
   return extractSpanContextFromTraceParentHeader(diagnosticId);
+}
+
+/**
+ * Converts TryAddOptions into the modern shape (OperationOptions) when needed.
+ * (this is something we can eliminate at the next major release of SB _or_ when
+ * we release with the GA version of opentelemetry).
+ *
+ * @internal
+ */
+export function convertTryAddOptionsForCompatibility(tryAddOptions: TryAddOptions): TryAddOptions {
+  /* eslint-disable-next-line @typescript-eslint/ban-ts-comment */
+  // @ts-ignore: parentSpan is deprecated and this is compat code to translate it until we can get rid of it.
+  const legacyParentSpanOrSpanContext = tryAddOptions.parentSpan;
+
+  /*
+    Our goal here is to offer compatibility but there is a case where a user might accidentally pass
+    _both_ sets of options. We'll assume they want the OperationTracingOptions code path in that case.
+
+    Example of accidental span passing:
+
+    const someOptionsPassedIntoTheirFunction = {
+       parentSpan: span;      // set somewhere else in their code
+    }
+
+    function takeSomeOptionsFromSomewhere(someOptionsPassedIntoTheirFunction) {
+      
+      batch.tryAddMessage(message, { 
+        // "runtime" blend of options from some other part of their app
+        ...someOptionsPassedIntoTheirFunction,      // parentSpan comes along for the ride...
+
+        tracingOptions: {
+          // thank goodness, I'm doing this right! (thinks the developer)
+          spanOptions: {
+            context: context
+          }
+        }
+      });
+    }
+
+    And now they've accidentally been opted into the legacy code path even though they think
+    they're using the modern code path.
+    
+    This does kick the can down the road a bit - at some point we will be putting them in this
+    situation where things looked okay but their spans are becoming unparented but we can 
+    try to announce this (and other changes related to tracing) in our next big rev.
+  */
+
+  if (!legacyParentSpanOrSpanContext || tryAddOptions.tracingOptions) {
+    // assume that the options are already in the modern shape even if (possibly)
+    // they were still specifying `parentSpan`
+    return tryAddOptions;
+  }
+
+  const convertedOptions: TryAddOptions = {
+    ...tryAddOptions,
+    tracingOptions: {
+      tracingContext: isSpan(legacyParentSpanOrSpanContext)
+        ? setSpan(otContext.active(), legacyParentSpanOrSpanContext)
+        : setSpanContext(otContext.active(), legacyParentSpanOrSpanContext)
+    }
+  };
+
+  return convertedOptions;
+}
+
+function isSpan(possibleSpan: Span | SpanContext | undefined): possibleSpan is Span {
+  if (possibleSpan == null) {
+    return false;
+  }
+
+  const x = possibleSpan as Span;
+  return typeof x.context === "function";
 }

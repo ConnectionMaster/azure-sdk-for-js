@@ -1,10 +1,40 @@
 # Release History
 
-## 4.2.0-beta.3 (Unreleased)
+## 4.3.0-beta.1 (Unreleased)
+
+### Features Added
+
+### Breaking Changes
+
+### Key Bugs Fixed
+
+### Fixed
+
+## 4.2.0 (2021-06-15)
+
+### Bug Fixes
+
+- Fixed an issue with `beginDeleteCertificate` and `beginRecoverDeletedCertificate` in which unknown service errors wouldn't bubble up properly to the end users.
+- Fixed an issue where importing a certificate incorrectly required a Subject or Subject Alternative Name.
+- Fixed an issue where retrying a failed initial Key Vault request may result in an empty body.
+- Marked `ErrorModel` as deprecated. It was erroneously exported publicly in 4.1 and should not be used. Please change the type to use `CertificateOperationError` instead.
+
+### Changes since 4.2.0-beta.3
+
+- Marked `ErrorModel` as deprecated. It was erroneously exported publicly in 4.1 and should not be used. Please change the type to use `CertificateOperationError` instead.
+- Fixed a bug with `beginDeleteCertificate` and `beginRecoverDeletedCertificate` in which unknown service errors wouldn't bubble up properly to the end users.
+- Renamed the `KeyVaultCertificateId` to `KeyVaultCertificateIdentifier`, and exported a method to parse Key Vault Certificate Ids: `parseKeyVaultCertificateIdentifier`.
+
+## 4.2.0-beta.3 (2021-04-06)
 
 - Updated the Latest service version to 7.2.
 - Added a sample demonstrating how to import PFX / PEM certificates.
 - Fixed an issue where importing a certificate incorrectly required a Subject or Subject Alternative Name.
+- Improved tracing across the various KeyVault libraries. By switching to a consistent naming convention, ensuring spans are always closed appropriately, and setting the correct status when an operation errors developers can expect an improved experience when enabling distributed tracing.
+  - We now ensure tracing spans are properly closed with an appropriate status when an operation throws an exception.
+  - If a traced operation throws an exception we will now properly record the exception message in the tracing span.
+  - Finally, naming conventions have been standardized across the KeyVault libraries taking the format of `Azure.KeyVault.<PACKAGE NAME>.<CLIENT NAME>`.
+- Fixed an issue where retrying a failed initial Key Vault request may result in an empty body.
 
 ## 4.2.0-beta.2 (2021-02-09)
 

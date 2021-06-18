@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 import { assert, use as chaiUse } from "chai";
+import { Context } from "mocha";
 import chaiPromises from "chai-as-promised";
 chaiUse(chaiPromises);
 
@@ -13,8 +14,7 @@ import { verifyAttestationToken } from "../utils/helpers";
 describe("PolicyManagementTests ", function() {
   let recorder: Recorder;
 
-  beforeEach(function() {
-    // eslint-disable-next-line no-invalid-this
+  beforeEach(function(this: Context) {
     recorder = createRecorder(this);
   });
 
@@ -29,7 +29,11 @@ describe("PolicyManagementTests ", function() {
     const result = policyResult.token;
     assert(result, "Expected a token from the service but did not receive one");
     if (result && !isPlaybackMode()) {
-      const tokenResult = await verifyAttestationToken(result, client);
+      const tokenResult = await verifyAttestationToken(
+        result,
+        await client.getAttestationSigners(),
+        "AAD"
+      );
       assert.isDefined(tokenResult);
       if (tokenResult) {
         const tokenKeys = tokenResult["x-ms-policy-certificates"];
@@ -45,7 +49,11 @@ describe("PolicyManagementTests ", function() {
     const result = policyResult.token;
     assert(result, "Expected a token from the service but did not receive one");
     if (result && !isPlaybackMode()) {
-      const tokenResult = await verifyAttestationToken(result, client);
+      const tokenResult = await verifyAttestationToken(
+        result,
+        await client.getAttestationSigners(),
+        "Shared"
+      );
       assert.isDefined(tokenResult);
       if (tokenResult) {
         const tokenKeys = tokenResult["x-ms-policy-certificates"];
@@ -61,7 +69,11 @@ describe("PolicyManagementTests ", function() {
     const result = policyResult.token;
     assert(result, "Expected a token from the service but did not receive one");
     if (result && !isPlaybackMode()) {
-      const tokenResult = await verifyAttestationToken(result, client);
+      const tokenResult = await verifyAttestationToken(
+        result,
+        await client.getAttestationSigners(),
+        "Isolated"
+      );
       assert.isDefined(tokenResult);
       if (tokenResult) {
         const tokenKeys = tokenResult["x-ms-policy-certificates"];

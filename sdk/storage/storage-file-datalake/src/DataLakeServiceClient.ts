@@ -5,7 +5,12 @@ import "@azure/core-paging";
 
 import { getDefaultProxySettings, isNode, TokenCredential } from "@azure/core-http";
 import { PagedAsyncIterableIterator } from "@azure/core-paging";
-import { BlobServiceClient } from "@azure/storage-blob";
+import {
+  BlobServiceClient,
+  ServiceGetPropertiesOptions,
+  ServiceSetPropertiesOptions,
+  ServiceSetPropertiesResponse
+} from "@azure/storage-blob";
 
 import { AnonymousCredential } from "./credentials/AnonymousCredential";
 import { StorageSharedKeyCredential } from "./credentials/StorageSharedKeyCredential";
@@ -30,10 +35,11 @@ import {
 import { createSpan } from "./utils/tracing";
 import { toDfsEndpointUrl, toFileSystemPagedAsyncIterableIterator } from "./transforms";
 import { ServiceGetUserDelegationKeyOptions, ServiceGetUserDelegationKeyResponse } from "./models";
-import { CanonicalCode } from "@opentelemetry/api";
+import { SpanStatusCode } from "@azure/core-tracing";
 import { AccountSASPermissions } from "./sas/AccountSASPermissions";
 import { generateAccountSASQueryParameters } from "./sas/AccountSASSignatureValues";
 import { AccountSASServices } from "./sas/AccountSASServices";
+import { DataLakeServiceGetPropertiesResponse, DataLakeServiceProperties } from "./index";
 
 /**
  * DataLakeServiceClient allows you to manipulate Azure
@@ -195,7 +201,7 @@ export class DataLakeServiceClient extends StorageClient {
       return await this.blobServiceClient.getUserDelegationKey(startsOn, expiresOn, updatedOptions);
     } catch (e) {
       span.setStatus({
-        code: CanonicalCode.UNKNOWN,
+        code: SpanStatusCode.ERROR,
         message: e.message
       });
       throw e;
@@ -370,7 +376,7 @@ export class DataLakeServiceClient extends StorageClient {
       };
     } catch (e) {
       span.setStatus({
-        code: CanonicalCode.UNKNOWN,
+        code: SpanStatusCode.ERROR,
         message: e.message
       });
       throw e;
@@ -419,7 +425,65 @@ export class DataLakeServiceClient extends StorageClient {
       };
     } catch (e) {
       span.setStatus({
-        code: CanonicalCode.UNKNOWN,
+        code: SpanStatusCode.ERROR,
+        message: e.message
+      });
+      throw e;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Gets the properties of a storage account’s Blob service endpoint, including properties
+   * for Storage Analytics and CORS (Cross-Origin Resource Sharing) rules.
+   * @see https://docs.microsoft.com/en-us/rest/api/storageservices/get-blob-service-properties
+   *
+   * @param options - Options to the Service Get Properties operation.
+   * @returns Response data for the Service Get Properties operation.
+   */
+  public async getProperties(
+    options: ServiceGetPropertiesOptions = {}
+  ): Promise<DataLakeServiceGetPropertiesResponse> {
+    const { span, updatedOptions } = createSpan("DataLakeServiceClient-getProperties", options);
+    try {
+      return await this.blobServiceClient.getProperties({
+        abortSignal: options.abortSignal,
+        tracingOptions: updatedOptions.tracingOptions
+      });
+    } catch (e) {
+      span.setStatus({
+        code: SpanStatusCode.ERROR,
+        message: e.message
+      });
+      throw e;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Sets properties for a storage account’s Blob service endpoint, including properties
+   * for Storage Analytics, CORS (Cross-Origin Resource Sharing) rules and soft delete settings.
+   * @see https://docs.microsoft.com/en-us/rest/api/storageservices/set-blob-service-properties
+   *
+   * @param properties -
+   * @param options - Options to the Service Set Properties operation.
+   * @returns Response data for the Service Set Properties operation.
+   */
+  public async setProperties(
+    properties: DataLakeServiceProperties,
+    options: ServiceSetPropertiesOptions = {}
+  ): Promise<ServiceSetPropertiesResponse> {
+    const { span, updatedOptions } = createSpan("DataLakeServiceClient-setProperties", options);
+    try {
+      return await this.blobServiceClient.setProperties(properties, {
+        abortSignal: options.abortSignal,
+        tracingOptions: updatedOptions.tracingOptions
+      });
+    } catch (e) {
+      span.setStatus({
+        code: SpanStatusCode.ERROR,
         message: e.message
       });
       throw e;

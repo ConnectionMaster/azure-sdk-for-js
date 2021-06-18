@@ -8,9 +8,9 @@ chai.use(chaiAsPromised);
 import debugModule from "debug";
 const debug = debugModule("azure:event-hubs:hubruntime-spec");
 import { EnvVarKeys, getEnvVars, setTracerForTest } from "./utils/testUtils";
+import { setSpan, context } from "@azure/core-tracing";
 const env = getEnvVars();
 
-import { AbortController } from "@azure/abort-controller";
 import { SpanGraph } from "@azure/core-tracing";
 import { EventHubProducerClient, EventHubConsumerClient, MessagingError } from "../../src";
 
@@ -66,41 +66,13 @@ describe("RuntimeInformation", function(): void {
       ids.should.have.members(arrayOfIncreasingNumbersFromZero(ids.length));
     });
 
-    it("EventHubProducerClient respects cancellationTokens", async function(): Promise<void> {
-      try {
-        const controller = new AbortController();
-        setTimeout(() => controller.abort(), 1);
-        await producerClient.getPartitionIds({
-          abortSignal: controller.signal
-        });
-        throw new Error(`Test failure`);
-      } catch (err) {
-        err.message.should.equal("The operation was aborted.");
-      }
-    });
-
-    it("EventHubConsumerClient respects cancellationTokens", async function(): Promise<void> {
-      try {
-        const controller = new AbortController();
-        setTimeout(() => controller.abort(), 1);
-        await consumerClient.getPartitionIds({
-          abortSignal: controller.signal
-        });
-        throw new Error(`Test failure`);
-      } catch (err) {
-        err.message.should.equal("The operation was aborted.");
-      }
-    });
-
     it("EventHubProducerClient can be manually traced", async function(): Promise<void> {
       const { tracer, resetTracer } = setTracerForTest();
 
       const rootSpan = tracer.startSpan("root");
       const ids = await producerClient.getPartitionIds({
         tracingOptions: {
-          spanOptions: {
-            parent: rootSpan.context()
-          }
+          tracingContext: setSpan(context.active(), rootSpan)
         }
       });
       ids.should.have.members(arrayOfIncreasingNumbersFromZero(ids.length));
@@ -135,9 +107,7 @@ describe("RuntimeInformation", function(): void {
       const rootSpan = tracer.startSpan("root");
       const ids = await consumerClient.getPartitionIds({
         tracingOptions: {
-          spanOptions: {
-            parent: rootSpan.context()
-          }
+          tracingContext: setSpan(context.active(), rootSpan)
         }
       });
       ids.should.have.members(arrayOfIncreasingNumbersFromZero(ids.length));
@@ -190,45 +160,13 @@ describe("RuntimeInformation", function(): void {
       hubRuntimeInfo.createdOn.should.be.instanceof(Date);
     });
 
-    it("EventHubProducerClient can cancel a request for hub runtime information", async function(): Promise<
-      void
-    > {
-      try {
-        const controller = new AbortController();
-        setTimeout(() => controller.abort(), 1);
-        await producerClient.getEventHubProperties({
-          abortSignal: controller.signal
-        });
-        throw new Error(`Test failure`);
-      } catch (err) {
-        err.message.should.equal("The operation was aborted.");
-      }
-    });
-
-    it("EventHubConsumerClient can cancel a request for hub runtime information", async function(): Promise<
-      void
-    > {
-      try {
-        const controller = new AbortController();
-        setTimeout(() => controller.abort(), 1);
-        await consumerClient.getEventHubProperties({
-          abortSignal: controller.signal
-        });
-        throw new Error(`Test failure`);
-      } catch (err) {
-        err.message.should.equal("The operation was aborted.");
-      }
-    });
-
     it("EventHubProducerClient can be manually traced", async function(): Promise<void> {
       const { tracer, resetTracer } = setTracerForTest();
 
       const rootSpan = tracer.startSpan("root");
       const hubRuntimeInfo = await producerClient.getEventHubProperties({
         tracingOptions: {
-          spanOptions: {
-            parent: rootSpan.context()
-          }
+          tracingContext: setSpan(context.active(), rootSpan)
         }
       });
       hubRuntimeInfo.partitionIds.should.have.members(
@@ -265,9 +203,7 @@ describe("RuntimeInformation", function(): void {
       const rootSpan = tracer.startSpan("root");
       const hubRuntimeInfo = await consumerClient.getEventHubProperties({
         tracingOptions: {
-          spanOptions: {
-            parent: rootSpan.context()
-          }
+          tracingContext: setSpan(context.active(), rootSpan)
         }
       });
       hubRuntimeInfo.partitionIds.should.have.members(
@@ -402,45 +338,13 @@ describe("RuntimeInformation", function(): void {
       }
     });
 
-    it("EventHubProducerClient can cancel a request for getPartitionInformation", async function(): Promise<
-      void
-    > {
-      try {
-        const controller = new AbortController();
-        setTimeout(() => controller.abort(), 1);
-        await producerClient.getPartitionProperties("0", {
-          abortSignal: controller.signal
-        });
-        throw new Error(`Test failure`);
-      } catch (err) {
-        err.message.should.equal("The operation was aborted.");
-      }
-    });
-
-    it("EventHubConsumerClient can cancel a request for getPartitionInformation", async function(): Promise<
-      void
-    > {
-      try {
-        const controller = new AbortController();
-        setTimeout(() => controller.abort(), 1);
-        await consumerClient.getPartitionProperties("0", {
-          abortSignal: controller.signal
-        });
-        throw new Error(`Test failure`);
-      } catch (err) {
-        err.message.should.equal("The operation was aborted.");
-      }
-    });
-
     it("EventHubProducerClient can be manually traced", async function(): Promise<void> {
       const { tracer, resetTracer } = setTracerForTest();
 
       const rootSpan = tracer.startSpan("root");
       const partitionRuntimeInfo = await producerClient.getPartitionProperties("0", {
         tracingOptions: {
-          spanOptions: {
-            parent: rootSpan.context()
-          }
+          tracingContext: setSpan(context.active(), rootSpan)
         }
       });
       partitionRuntimeInfo.partitionId.should.equal("0");
@@ -479,9 +383,7 @@ describe("RuntimeInformation", function(): void {
       const rootSpan = tracer.startSpan("root");
       const partitionRuntimeInfo = await consumerClient.getPartitionProperties("0", {
         tracingOptions: {
-          spanOptions: {
-            parent: rootSpan.context()
-          }
+          tracingContext: setSpan(context.active(), rootSpan)
         }
       });
       partitionRuntimeInfo.partitionId.should.equal("0");

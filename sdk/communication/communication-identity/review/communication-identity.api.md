@@ -22,8 +22,9 @@ export class CommunicationIdentityClient {
     constructor(endpoint: string, credential: KeyCredential, options?: CommunicationIdentityClientOptions);
     constructor(endpoint: string, credential: TokenCredential, options?: CommunicationIdentityClientOptions);
     createUser(options?: OperationOptions): Promise<CommunicationUserIdentifier>;
-    createUserWithToken(scopes: TokenScope[], options?: OperationOptions): Promise<CommunicationUserToken>;
+    createUserAndToken(scopes: TokenScope[], options?: OperationOptions): Promise<CommunicationUserToken>;
     deleteUser(user: CommunicationUserIdentifier, options?: OperationOptions): Promise<void>;
+    exchangeTeamsToken(teamsToken: string, options?: OperationOptions): Promise<CommunicationAccessToken>;
     getToken(user: CommunicationUserIdentifier, scopes: TokenScope[], options?: OperationOptions): Promise<CommunicationAccessToken>;
     revokeTokens(user: CommunicationUserIdentifier, options?: OperationOptions): Promise<void>;
 }

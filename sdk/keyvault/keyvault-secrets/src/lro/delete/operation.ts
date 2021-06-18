@@ -2,19 +2,20 @@
 // Licensed under the MIT license.
 
 import { AbortSignalLike } from "@azure/abort-controller";
-import { RequestOptionsBase } from "@azure/core-http";
 import { DeletedSecret, DeleteSecretOptions, GetDeletedSecretOptions } from "../../secretsModels";
 import {
   KeyVaultSecretPollOperation,
   KeyVaultSecretPollOperationState
 } from "../keyVaultSecretPoller";
 import { KeyVaultClient } from "../../generated/keyVaultClient";
-import {
-  KeyVaultClientDeleteSecretResponse,
-  KeyVaultClientGetDeletedSecretResponse
-} from "../../generated/models";
-import { createSpan } from "../../tracing";
 import { getSecretFromSecretBundle } from "../../transformations";
+import { OperationOptions } from "@azure/core-http";
+import { createTraceFunction } from "../../../../keyvault-common/src";
+
+/**
+ * @internal
+ */
+const withTrace = createTraceFunction("Azure.KeyVault.Secrets.DeleteSecretPoller");
 
 /**
  * An interface representing the state of a delete secret's poll operation
@@ -33,7 +34,7 @@ export class DeleteSecretPollOperation extends KeyVaultSecretPollOperation<
     public state: DeleteSecretPollOperationState,
     private vaultUrl: string,
     private client: KeyVaultClient,
-    private requestOptions: RequestOptionsBase = {}
+    private operationOptions: OperationOptions = {}
   ) {
     super(state, { cancelMessage: "Canceling the deletion of a secret is not supported." });
   }
@@ -42,40 +43,25 @@ export class DeleteSecretPollOperation extends KeyVaultSecretPollOperation<
    * Sends a delete request for the given Key Vault Key's name to the Key Vault service.
    * Since the Key Vault Key won't be immediately deleted, we have {@link beginDeleteKey}.
    */
-  private async deleteSecret(
-    name: string,
-    options: DeleteSecretOptions = {}
-  ): Promise<DeletedSecret> {
-    const { span, updatedOptions } = createSpan("generatedClient.deleteKey", options);
-
-    let response: KeyVaultClientDeleteSecretResponse;
-    try {
-      response = await this.client.deleteSecret(this.vaultUrl, name, updatedOptions);
-    } finally {
-      span.end();
-    }
-
-    return getSecretFromSecretBundle(response);
+  private deleteSecret(name: string, options: DeleteSecretOptions = {}): Promise<DeletedSecret> {
+    return withTrace("deleteSecret", options, async (updatedOptions) => {
+      const response = await this.client.deleteSecret(this.vaultUrl, name, updatedOptions);
+      return getSecretFromSecretBundle(response);
+    });
   }
 
   /**
    * The getDeletedSecret method returns the specified deleted secret along with its properties.
    * This operation requires the secrets/get permission.
    */
-  private async getDeletedSecret(
+  private getDeletedSecret(
     name: string,
     options: GetDeletedSecretOptions = {}
   ): Promise<DeletedSecret> {
-    const { span, updatedOptions } = createSpan("generatedClient.getDeletedSecret", options);
-
-    let response: KeyVaultClientGetDeletedSecretResponse;
-    try {
-      response = await this.client.getDeletedSecret(this.vaultUrl, name, updatedOptions);
-    } finally {
-      span.end();
-    }
-
-    return getSecretFromSecretBundle(response);
+    return withTrace("getDeletedSecret", options, async (updatedOptions) => {
+      const response = await this.client.getDeletedSecret(this.vaultUrl, name, updatedOptions);
+      return getSecretFromSecretBundle(response);
+    });
   }
 
   /**
@@ -91,11 +77,11 @@ export class DeleteSecretPollOperation extends KeyVaultSecretPollOperation<
     const { name } = state;
 
     if (options.abortSignal) {
-      this.requestOptions.abortSignal = options.abortSignal;
+      this.operationOptions.abortSignal = options.abortSignal;
     }
 
     if (!state.isStarted) {
-      const deletedSecret = await this.deleteSecret(name, this.requestOptions);
+      const deletedSecret = await this.deleteSecret(name, this.operationOptions);
       state.isStarted = true;
       state.result = deletedSecret;
       if (!deletedSecret.properties.recoveryId) {
@@ -105,7 +91,7 @@ export class DeleteSecretPollOperation extends KeyVaultSecretPollOperation<
 
     if (!state.isCompleted) {
       try {
-        state.result = await this.getDeletedSecret(name, this.requestOptions);
+        state.result = await this.getDeletedSecret(name, this.operationOptions);
         state.isCompleted = true;
       } catch (error) {
         if (error.statusCode === 403) {
@@ -114,6 +100,7 @@ export class DeleteSecretPollOperation extends KeyVaultSecretPollOperation<
         } else if (error.statusCode !== 404) {
           state.error = error;
           state.isCompleted = true;
+          throw error;
         }
       }
     }

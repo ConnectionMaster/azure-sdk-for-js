@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import { RestError } from "@azure/core-https";
+import { RestError } from "@azure/core-rest-pipeline";
 import { URL, URLSearchParams } from "./utils/url";
 import { logger } from "./logger";
 import { StringIndexType as GeneratedStringIndexType } from "./generated";
@@ -94,7 +94,7 @@ const jsEncodingUnit = "Utf16CodeUnit";
 /**
  * Measurement units that can used to calculate the offset and length properties.
  */
-export type StringIndexType = "TextElements_v8" | "UnicodeCodePoint" | "Utf16CodeUnit";
+export type StringIndexType = "TextElement_v8" | "UnicodeCodePoint" | "Utf16CodeUnit";
 
 /**
  * @internal
@@ -116,11 +116,38 @@ export function setStrEncodingParam<X extends { stringIndexType?: GeneratedStrin
   return { ...x, stringIndexType: x.stringIndexType || jsEncodingUnit };
 }
 
+export function setStrEncodingParamValue(
+  stringIndexType?: GeneratedStringIndexType
+): GeneratedStringIndexType {
+  return stringIndexType || jsEncodingUnit;
+}
+
+/**
+ * Set the opinion mining property
+ * @internal
+ */
+export function setOpinionMining<X extends { includeOpinionMining?: boolean }>(
+  x: X
+): X & { opinionMining?: boolean } {
+  return { ...x, opinionMining: x.includeOpinionMining };
+}
+
 /**
  * @internal
  */
 export function AddParamsToTask<X>(action: X): { parameters?: X } {
   return { parameters: action };
+}
+
+/**
+ * Set the modelVersion property with default if it does not exist in x.
+ * @param options - operation options bag that has a {@link StringIndexType}
+ * @internal
+ */
+export function setModelVersionParam<X extends { modelVersion?: string }>(
+  x: X
+): X & { modelVersion: string } {
+  return { ...x, modelVersion: x.modelVersion || "latest" };
 }
 
 /**
@@ -211,4 +238,11 @@ export function handleInvalidDocumentBatch(error: unknown): any {
  */
 export function delay(timeInMs: number): Promise<void> {
   return new Promise((resolve) => setTimeout(() => resolve(), timeInMs));
+}
+
+/**
+ * @internal
+ */
+export function compose<T1, T2, T3>(fn1: (x: T1) => T2, fn2: (y: T2) => T3): (x: T1) => T3 {
+  return (value: T1) => fn2(fn1(value));
 }

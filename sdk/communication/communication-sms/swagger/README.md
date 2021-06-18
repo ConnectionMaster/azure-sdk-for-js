@@ -11,11 +11,13 @@ description: SMS Client
 generate-metadata: false
 license-header: MICROSOFT_MIT_NO_VERSION
 output-folder: ../src/generated
-input-file: https://raw.githubusercontent.com/Azure/azure-rest-api-specs/83d782b99cb85a9b2f5ef22774584541dd0ff997/specification/communication/data-plane/Microsoft.CommunicationServicesSms/stable/2021-03-07/communicationservicessms.json
+tag: package-sms-2021-03-07
+require: https://raw.githubusercontent.com/Azure/azure-rest-api-specs/896d05e37dbb00712726620b8d679cc3c3be09fb/specification/communication/data-plane/Sms/readme.md
 model-date-time-as-string: false
 optional-response-headers: true
 use-extension:
   "@autorest/typescript": "6.0.0-dev.20200623.2"
 azure-arm: false
 add-credentials: false
+package-version: 1.0.1
 ```

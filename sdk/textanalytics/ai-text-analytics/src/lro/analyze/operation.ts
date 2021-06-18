@@ -6,24 +6,25 @@ import { OperationOptions } from "@azure/core-client";
 import { AbortSignalLike } from "@azure/abort-controller";
 
 import {
+  AnalyzeJobState,
   GeneratedClientAnalyzeResponse as BeginAnalyzeResponse,
-  GeneratedClientAnalyzeStatusOptionalParams as AnalyzeBatchActionsOperationStatusOptions,
+  GeneratedClientAnalyzeStatusOptionalParams as AnalyzeActionsOperationStatusOptions,
   JobManifestTasks as GeneratedActions,
   State,
   TextDocumentBatchStatistics,
   TextDocumentInput
 } from "../../generated/models";
 import {
-  AnalyzeBatchActionsResult,
-  PagedAsyncIterableAnalyzeBatchActionsResult,
-  PagedAnalyzeBatchActionsResult,
-  createAnalyzeBatchActionsResult
-} from "../../analyzeBatchActionsResult";
+  AnalyzeActionsResult,
+  PagedAsyncIterableAnalyzeActionsResult,
+  PagedAnalyzeActionsResult,
+  createAnalyzeActionsResult
+} from "../../analyzeActionsResult";
 import { PageSettings } from "@azure/core-paging";
 import { getOperationId, handleInvalidDocumentBatch, nextLinkToTopAndSkip } from "../../util";
 import { AnalysisPollOperation, AnalysisPollOperationState, OperationMetadata } from "../poller";
 import { GeneratedClient as Client } from "../../generated";
-import { CanonicalCode } from "@opentelemetry/api";
+import { SpanStatusCode } from "@azure/core-tracing";
 import { createSpan } from "../../tracing";
 import { logger } from "../../logger";
 export { State };
@@ -32,33 +33,37 @@ export { State };
  * @internal
  */
 interface AnalyzeResultsWithPagination {
-  result: AnalyzeBatchActionsResult;
+  result: AnalyzeActionsResult;
   top?: number;
   skip?: number;
 }
 
 /**
- * The metadata for beginAnalyzeBatchActions operations.
+ * The metadata for beginAnalyzeActions operations.
  */
-export interface AnalyzeBatchActionsOperationMetadata extends OperationMetadata {
+export interface AnalyzeActionsOperationMetadata extends OperationMetadata {
   /**
    * Number of successfully completed actions.
    */
-  actionsSucceededCount?: number;
+  actionsSucceededCount: number;
   /**
    * Number of failed actions.
    */
-  actionsFailedCount?: number;
+  actionsFailedCount: number;
   /**
    * Number of actions still in progress.
    */
-  actionsInProgressCount?: number;
+  actionsInProgressCount: number;
+  /**
+   * The operation's display name.
+   */
+  displayName?: string;
 }
 
 /**
  * @internal
  */
-interface AnalyzeBatchActionsOperationStatus {
+interface AnalyzeActionsOperationStatus {
   done: boolean;
   /**
    * Statistics about the input document batch and how it was processed
@@ -66,7 +71,7 @@ interface AnalyzeBatchActionsOperationStatus {
    * in the client call.
    */
   statistics?: TextDocumentBatchStatistics;
-  operationMetdata?: AnalyzeBatchActionsOperationMetadata;
+  operationMetdata: Omit<AnalyzeActionsOperationMetadata, "operationId">;
 }
 
 /**
@@ -77,9 +82,9 @@ interface BeginAnalyzeInternalOptions extends OperationOptions {
 }
 
 /**
- * Options for the begin analyze batch actions operation.
+ * Options for the begin analyze actions operation.
  */
-export interface BeginAnalyzeBatchActionsOptions extends OperationOptions {
+export interface BeginAnalyzeActionsOptions extends OperationOptions {
   /**
    * Delay to wait until next poll, in milliseconds.
    */
@@ -92,45 +97,67 @@ export interface BeginAnalyzeBatchActionsOptions extends OperationOptions {
    * If set to true, response will contain input and document level statistics.
    */
   includeStatistics?: boolean;
+  /**
+   * The operation's display name.
+   */
+  displayName?: string;
 }
 
 /**
  * The state of the begin analyze polling operation.
  */
-export interface AnalyzeBatchActionsOperationState
-  extends AnalysisPollOperationState<PagedAnalyzeBatchActionsResult>,
-    AnalyzeBatchActionsOperationMetadata {}
+export interface AnalyzeActionsOperationState
+  extends AnalysisPollOperationState<PagedAnalyzeActionsResult>,
+    AnalyzeActionsOperationMetadata {}
+
+/**
+ * @internal
+ */
+function getMetaInfoFromResponse(
+  response: AnalyzeJobState
+): Omit<AnalyzeActionsOperationMetadata, "operationId"> {
+  return {
+    createdOn: response.createdDateTime,
+    lastModifiedOn: response.lastUpdateDateTime,
+    expiresOn: response.expirationDateTime,
+    status: response.status,
+    actionsSucceededCount: response.tasks.completed,
+    actionsFailedCount: response.tasks.failed,
+    actionsInProgressCount: response.tasks.inProgress,
+    displayName: response.displayName
+  };
+}
 
 /**
  * Class that represents a poller that waits for results of the analyze
  * operation.
  * @internal
  */
-export class BeginAnalyzeBatchActionsPollerOperation extends AnalysisPollOperation<
-  AnalyzeBatchActionsOperationState,
-  PagedAnalyzeBatchActionsResult
+export class BeginAnalyzeActionsPollerOperation extends AnalysisPollOperation<
+  AnalyzeActionsOperationState,
+  PagedAnalyzeActionsResult
 > {
   constructor(
-    public state: AnalyzeBatchActionsOperationState,
+    public state: AnalyzeActionsOperationState,
     // eslint-disable-next-line @azure/azure-sdk/ts-use-interface-parameters
     private client: Client,
     private documents: TextDocumentInput[],
     private actions: GeneratedActions,
-    private options: BeginAnalyzeBatchActionsOptions = {}
+    private options: BeginAnalyzeActionsOptions = {}
   ) {
     super(state);
   }
 
   /**
-   * should be called only after all the status of the analyze batch actions operations became
+   * should be called only after all the status of the analyze actions operations became
    * "succeeded" and it returns an iterator for the results and provides a
    * byPage method to return the results paged.
    */
-  private listAnalyzeBatchActionsResults(
+  private listAnalyzeActionsResults(
     operationId: string,
-    options: AnalyzeBatchActionsOperationStatusOptions = {}
-  ): PagedAsyncIterableAnalyzeBatchActionsResult {
-    const iter = this._listAnalyzeBatchActionsResultsPaged(operationId, options);
+    options: AnalyzeActionsOperationStatusOptions = {}
+  ): PagedAsyncIterableAnalyzeActionsResult {
+    const iter = this._listAnalyzeActionsResultsPaged(operationId, options);
     return {
       next() {
         return iter.next();
@@ -140,27 +167,27 @@ export class BeginAnalyzeBatchActionsPollerOperation extends AnalysisPollOperati
       },
       byPage: (settings?: PageSettings) => {
         const pageOptions = { ...options, top: settings?.maxPageSize };
-        return this._listAnalyzeBatchActionsResultsPaged(operationId, pageOptions);
+        return this._listAnalyzeActionsResultsPaged(operationId, pageOptions);
       }
     };
   }
 
   /**
-   * returns an iterator to arrays of the results of an analyze batch actions operation.
+   * returns an iterator to arrays of the results of an analyze actions operation.
    */
-  private async *_listAnalyzeBatchActionsResultsPaged(
+  private async *_listAnalyzeActionsResultsPaged(
     operationId: string,
-    options?: AnalyzeBatchActionsOperationStatusOptions
-  ): AsyncIterableIterator<AnalyzeBatchActionsResult> {
-    let response = await this._listAnalyzeBatchActionsResultsSinglePage(operationId, options);
+    options?: AnalyzeActionsOperationStatusOptions
+  ): AsyncIterableIterator<AnalyzeActionsResult> {
+    let response = await this._listAnalyzeActionsResultsSinglePage(operationId, options);
     yield response.result;
     while (response.skip) {
-      const optionsWithContinuation: AnalyzeBatchActionsOperationStatusOptions = {
+      const optionsWithContinuation: AnalyzeActionsOperationStatusOptions = {
         ...options,
         top: response.top,
         skip: response.skip
       };
-      response = await this._listAnalyzeBatchActionsResultsSinglePage(
+      response = await this._listAnalyzeActionsResultsSinglePage(
         operationId,
         optionsWithContinuation
       );
@@ -169,25 +196,25 @@ export class BeginAnalyzeBatchActionsPollerOperation extends AnalysisPollOperati
   }
 
   /**
-   * returns an iterator to arrays of the sorted results of an analyze batch actions operation.
+   * returns an iterator to arrays of the sorted results of an analyze actions operation.
    */
-  private async _listAnalyzeBatchActionsResultsSinglePage(
+  private async _listAnalyzeActionsResultsSinglePage(
     operationId: string,
-    options?: AnalyzeBatchActionsOperationStatusOptions
+    options?: AnalyzeActionsOperationStatusOptions
   ): Promise<AnalyzeResultsWithPagination> {
     const { span, updatedOptions: finalOptions } = createSpan(
-      "TextAnalyticsClient-_listAnalyzeBatchActionsResultsSinglePage",
+      "TextAnalyticsClient-_listAnalyzeActionsResultsSinglePage",
       options || {}
     );
     try {
       const response = await this.client.analyzeStatus(operationId, finalOptions);
-      const result = createAnalyzeBatchActionsResult(response, this.documents);
+      const result = createAnalyzeActionsResult(response, this.documents);
       return response.nextLink
         ? { result, ...nextLinkToTopAndSkip(response.nextLink) }
         : { result };
     } catch (e) {
       span.setStatus({
-        code: CanonicalCode.UNKNOWN,
+        code: SpanStatusCode.ERROR,
         message: e.message
       });
       throw e;
@@ -197,15 +224,15 @@ export class BeginAnalyzeBatchActionsPollerOperation extends AnalysisPollOperati
   }
 
   /**
-   * returns whether the analyze batch actions operation is done and if so returns also
+   * returns whether the analyze actions operation is done and if so returns also
    * statistics.
    */
-  private async getAnalyzeBatchActionsOperationStatus(
+  private async getAnalyzeActionsOperationStatus(
     operationId: string,
-    options?: AnalyzeBatchActionsOperationStatusOptions
-  ): Promise<AnalyzeBatchActionsOperationStatus> {
+    options?: AnalyzeActionsOperationStatusOptions
+  ): Promise<AnalyzeActionsOperationStatus> {
     const { span, updatedOptions: finalOptions } = createSpan(
-      "TextAnalyticsClient-getAnalyzeBatchActionsOperationStatus",
+      "TextAnalyticsClient-getAnalyzeActionsOperationStatus",
       options || {}
     );
     try {
@@ -218,22 +245,14 @@ export class BeginAnalyzeBatchActionsPollerOperation extends AnalysisPollOperati
           return {
             done: true,
             statistics: response.statistics,
-            operationMetdata: {
-              createdOn: response.createdDateTime,
-              lastModifiedOn: response.lastUpdateDateTime,
-              expiresOn: response.expirationDateTime,
-              status: response.status,
-              actionsSucceededCount: response.tasks.completed,
-              actionsFailedCount: response.tasks.failed,
-              actionsInProgressCount: response.tasks.inProgress
-            }
+            operationMetdata: getMetaInfoFromResponse(response)
           };
         }
       }
-      return { done: false };
+      return { done: false, operationMetdata: getMetaInfoFromResponse(response) };
     } catch (e) {
       span.setStatus({
-        code: CanonicalCode.UNKNOWN,
+        code: SpanStatusCode.ERROR,
         message: e.message
       });
       throw e;
@@ -242,7 +261,7 @@ export class BeginAnalyzeBatchActionsPollerOperation extends AnalysisPollOperati
     }
   }
 
-  private async beginAnalyzeBatchActions(
+  private async beginAnalyzeActions(
     documents: TextDocumentInput[],
     actions: GeneratedActions,
     options?: BeginAnalyzeInternalOptions
@@ -264,7 +283,7 @@ export class BeginAnalyzeBatchActionsPollerOperation extends AnalysisPollOperati
     } catch (e) {
       const exception = handleInvalidDocumentBatch(e);
       span.setStatus({
-        code: CanonicalCode.UNKNOWN,
+        code: SpanStatusCode.ERROR,
         message: exception.message
       });
       throw exception;
@@ -276,14 +295,15 @@ export class BeginAnalyzeBatchActionsPollerOperation extends AnalysisPollOperati
   async update(
     options: {
       abortSignal?: AbortSignalLike;
-      fireProgress?: (state: AnalyzeBatchActionsOperationState) => void;
+      fireProgress?: (state: AnalyzeActionsOperationState) => void;
     } = {}
-  ): Promise<BeginAnalyzeBatchActionsPollerOperation> {
+  ): Promise<BeginAnalyzeActionsPollerOperation> {
     const state = this.state;
     const updatedAbortSignal = options.abortSignal;
     if (!state.isStarted) {
       state.isStarted = true;
-      const response = await this.beginAnalyzeBatchActions(this.documents, this.actions, {
+      const response = await this.beginAnalyzeActions(this.documents, this.actions, {
+        displayName: this.options.displayName,
         tracingOptions: this.options.tracingOptions,
         requestOptions: this.options.requestOptions,
         abortSignal: updatedAbortSignal ? updatedAbortSignal : this.options.abortSignal
@@ -296,37 +316,45 @@ export class BeginAnalyzeBatchActionsPollerOperation extends AnalysisPollOperati
       state.operationId = getOperationId(response.operationLocation);
     }
 
-    const operationStatus = await this.getAnalyzeBatchActionsOperationStatus(state.operationId!, {
+    const operationStatus = await this.getAnalyzeActionsOperationStatus(state.operationId!, {
       abortSignal: updatedAbortSignal ? updatedAbortSignal : options.abortSignal,
       includeStatistics: this.options.includeStatistics,
       tracingOptions: this.options.tracingOptions
     });
 
-    state.createdOn = operationStatus.operationMetdata?.createdOn;
-    state.expiresOn = operationStatus.operationMetdata?.expiresOn;
-    state.lastModifiedOn = operationStatus.operationMetdata?.lastModifiedOn;
-    state.status = operationStatus.operationMetdata?.status;
-    state.actionsSucceededCount = operationStatus.operationMetdata?.actionsSucceededCount;
-    state.actionsFailedCount = operationStatus.operationMetdata?.actionsFailedCount;
-    state.actionsInProgressCount = operationStatus.operationMetdata?.actionsInProgressCount;
+    state.createdOn = operationStatus.operationMetdata.createdOn;
+    state.expiresOn = operationStatus.operationMetdata.expiresOn;
+    state.lastModifiedOn = operationStatus.operationMetdata.lastModifiedOn;
+    state.status = operationStatus.operationMetdata.status;
+    state.actionsSucceededCount = operationStatus.operationMetdata.actionsSucceededCount;
+    state.actionsFailedCount = operationStatus.operationMetdata.actionsFailedCount;
+    state.actionsInProgressCount = operationStatus.operationMetdata.actionsInProgressCount;
+    state.displayName = operationStatus.operationMetdata?.displayName;
 
     if (!state.isCompleted && operationStatus.done) {
-      if (typeof options.fireProgress === "function") {
-        options.fireProgress(state);
-      }
-      const pagedIterator = this.listAnalyzeBatchActionsResults(state.operationId!, {
+      const pagedIterator = this.listAnalyzeActionsResults(state.operationId!, {
         abortSignal: this.options.abortSignal,
-        tracingOptions: this.options.tracingOptions
+        tracingOptions: this.options.tracingOptions,
+        includeStatistics: this.options.includeStatistics,
+        onResponse: this.options.onResponse,
+        serializerOptions: this.options.serializerOptions
       });
-      state.result = Object.assign(pagedIterator, {
-        statistics: operationStatus.statistics
-      });
+      // Attach stats if the service starts to return them
+      // https://github.com/Azure/azure-sdk-for-js/issues/14139
+      // state.result = Object.assign(pagedIterator, {
+      //   statistics: operationStatus.statistics
+      // });
+      state.result = pagedIterator;
       state.isCompleted = true;
+    }
+
+    if (typeof options.fireProgress === "function") {
+      options.fireProgress(state);
     }
     return this;
   }
 
-  async cancel(): Promise<BeginAnalyzeBatchActionsPollerOperation> {
+  async cancel(): Promise<BeginAnalyzeActionsPollerOperation> {
     const state = this.state;
     logger.warning(`The service does not yet support cancellation for beginAnalyze.`);
     state.isCancelled = true;

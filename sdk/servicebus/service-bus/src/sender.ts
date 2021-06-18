@@ -6,6 +6,7 @@ import { MessageSender } from "./core/messageSender";
 import { ServiceBusMessage } from "./serviceBusMessage";
 import { ConnectionContext } from "./connectionContext";
 import {
+  errorInvalidMessageTypeSingleOrArray,
   getSenderClosedErrorMsg,
   throwErrorIfConnectionClosed,
   throwIfNotValidServiceBusMessage,
@@ -14,9 +15,15 @@ import {
 } from "./util/errors";
 import { ServiceBusMessageBatch } from "./serviceBusMessageBatch";
 import { CreateMessageBatchOptions } from "./models";
-import { RetryConfig, RetryOperationType, RetryOptions, retry } from "@azure/core-amqp";
+import {
+  RetryConfig,
+  RetryOperationType,
+  RetryOptions,
+  retry,
+  AmqpAnnotatedMessage
+} from "@azure/core-amqp";
 import { OperationOptionsBase } from "./modelsToBeSharedWithEventHubs";
-import { CanonicalCode, Link, SpanKind } from "@opentelemetry/api";
+import { SpanStatusCode, Link, SpanKind } from "@azure/core-tracing";
 import { senderLogger as logger } from "./log";
 import { ServiceBusError } from "./serviceBusError";
 import { createServiceBusSpan } from "./diagnostics/tracing";
@@ -44,7 +51,12 @@ export interface ServiceBusSender {
    * @throws `ServiceBusError` if the service returns an error while sending messages to the service.
    */
   sendMessages(
-    messages: ServiceBusMessage | ServiceBusMessage[] | ServiceBusMessageBatch,
+    messages:
+      | ServiceBusMessage
+      | ServiceBusMessage[]
+      | ServiceBusMessageBatch
+      | AmqpAnnotatedMessage
+      | AmqpAnnotatedMessage[],
     options?: OperationOptionsBase
   ): Promise<void>;
 
@@ -91,7 +103,11 @@ export interface ServiceBusSender {
    * @throws `ServiceBusError` if the service returns an error while scheduling messages.
    */
   scheduleMessages(
-    messages: ServiceBusMessage | ServiceBusMessage[],
+    messages:
+      | ServiceBusMessage
+      | ServiceBusMessage[]
+      | AmqpAnnotatedMessage
+      | AmqpAnnotatedMessage[],
     scheduledEnqueueTimeUtc: Date,
     options?: OperationOptionsBase
   ): Promise<Long[]>;
@@ -166,13 +182,16 @@ export class ServiceBusSenderImpl implements ServiceBusSender {
   }
 
   async sendMessages(
-    messages: ServiceBusMessage | ServiceBusMessage[] | ServiceBusMessageBatch,
+    messages:
+      | ServiceBusMessage
+      | ServiceBusMessage[]
+      | ServiceBusMessageBatch
+      | AmqpAnnotatedMessage
+      | AmqpAnnotatedMessage[],
     options?: OperationOptionsBase
   ): Promise<void> {
     this._throwIfSenderOrConnectionClosed();
     throwTypeErrorIfParameterMissing(this._context.connectionId, "messages", messages);
-    const invalidTypeErrMsg =
-      "Provided value for 'messages' must be of type ServiceBusMessage, ServiceBusMessageBatch or an array of type ServiceBusMessage.";
 
     let batch: ServiceBusMessageBatch;
     if (isServiceBusMessageBatch(messages)) {
@@ -183,7 +202,7 @@ export class ServiceBusSenderImpl implements ServiceBusSender {
       }
       batch = await this.createMessageBatch(options);
       for (const message of messages) {
-        throwIfNotValidServiceBusMessage(message, invalidTypeErrMsg);
+        throwIfNotValidServiceBusMessage(message, errorInvalidMessageTypeSingleOrArray);
         if (!batch.tryAddMessage(message, options)) {
           // this is too big - throw an error
           throw new ServiceBusError(
@@ -213,11 +232,11 @@ export class ServiceBusSenderImpl implements ServiceBusSender {
 
     try {
       const result = await this._sender.sendBatch(batch, options);
-      sendSpan.setStatus({ code: CanonicalCode.OK });
+      sendSpan.setStatus({ code: SpanStatusCode.OK });
       return result;
     } catch (error) {
       sendSpan.setStatus({
-        code: CanonicalCode.UNKNOWN,
+        code: SpanStatusCode.ERROR,
         message: error.message
       });
       throw error;
@@ -232,7 +251,11 @@ export class ServiceBusSenderImpl implements ServiceBusSender {
   }
 
   async scheduleMessages(
-    messages: ServiceBusMessage | ServiceBusMessage[],
+    messages:
+      | ServiceBusMessage
+      | ServiceBusMessage[]
+      | AmqpAnnotatedMessage
+      | AmqpAnnotatedMessage[],
     scheduledEnqueueTimeUtc: Date,
     options: OperationOptionsBase = {}
   ): Promise<Long[]> {
@@ -246,10 +269,7 @@ export class ServiceBusSenderImpl implements ServiceBusSender {
     const messagesToSchedule = Array.isArray(messages) ? messages : [messages];
 
     for (const message of messagesToSchedule) {
-      throwIfNotValidServiceBusMessage(
-        message,
-        "Provided value for 'messages' must be of type ServiceBusMessage or an array of type ServiceBusMessage."
-      );
+      throwIfNotValidServiceBusMessage(message, errorInvalidMessageTypeSingleOrArray);
     }
 
     const scheduleMessageOperationPromise = async (): Promise<Long[]> => {
@@ -292,16 +312,14 @@ export class ServiceBusSenderImpl implements ServiceBusSender {
       ? sequenceNumbers
       : [sequenceNumbers];
     const cancelSchedulesMessagesOperationPromise = async (): Promise<void> => {
-      return this._context.getManagementClient(this._entityPath).cancelScheduledMessages(
-        sequenceNumbersToCancel,
-
-        {
+      return this._context
+        .getManagementClient(this._entityPath)
+        .cancelScheduledMessages(sequenceNumbersToCancel, {
           ...options,
           associatedLinkName: this._sender.name,
           requestName: "cancelScheduledMessages",
           timeoutInMs: this._retryOptions.timeoutInMs
-        }
-      );
+        });
     };
     const config: RetryConfig<void> = {
       operation: cancelSchedulesMessagesOperationPromise,
@@ -343,7 +361,7 @@ export class ServiceBusSenderImpl implements ServiceBusSender {
  * @internal
  */
 export function isServiceBusMessageBatch(
-  messageBatchOrAnything: any
+  messageBatchOrAnything: unknown
 ): messageBatchOrAnything is ServiceBusMessageBatch {
   if (messageBatchOrAnything == null) {
     return false;

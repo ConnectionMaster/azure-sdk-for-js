@@ -54,6 +54,8 @@ import {
   EntityRecognitionSkill,
   SentimentSkill,
   SplitSkill,
+  CustomEntityLookupSkill,
+  DocumentExtractionSkill,
   TextTranslationSkill,
   WebApiSkill,
   DefaultCognitiveServicesAccount,
@@ -71,7 +73,10 @@ import {
   ServiceLimits,
   FieldMapping,
   IndexingParameters,
-  IndexingSchedule
+  IndexingSchedule,
+  LexicalNormalizerName,
+  CustomNormalizer,
+  SearchIndexerKnowledgeStore
 } from "./generated/service/models";
 
 import { PagedAsyncIterableIterator } from "@azure/core-paging";
@@ -453,7 +458,9 @@ export type SearchIndexerSkill =
   | EntityRecognitionSkill
   | SentimentSkill
   | SplitSkill
+  | CustomEntityLookupSkill
   | TextTranslationSkill
+  | DocumentExtractionSkill
   | WebApiSkill;
 
 /**
@@ -655,6 +662,11 @@ export type TokenFilter =
 export type CharFilter = MappingCharFilter | PatternReplaceCharFilter;
 
 /**
+ * Contains the possible cases for LexicalNormalizer.
+ */
+export type LexicalNormalizer = CustomNormalizer;
+
+/**
  * Contains the possible cases for ScoringFunction.
  */
 export type ScoringFunction =
@@ -801,6 +813,10 @@ export interface SimpleField {
    * fields.
    */
   synonymMapNames?: string[];
+  /**
+   * The name of the normalizer used at indexing time for the field.
+   */
+  normalizerName?: LexicalNormalizerName;
 }
 
 export function isComplexField(field: SearchField): field is ComplexField {
@@ -920,6 +936,10 @@ export interface SearchIndex {
    * The character filters for the index.
    */
   charFilters?: CharFilter[];
+  /**
+   * The normalizers for the index.
+   */
+  normalizers?: LexicalNormalizer[];
   /**
    * A description of an encryption key that you create in Azure Key Vault. This key is used to
    * provide an additional level of encryption-at-rest for your data when you want full assurance
@@ -1058,6 +1078,10 @@ export interface SearchIndexerSkillset {
    * Details about cognitive services to be used when running skills.
    */
   cognitiveServicesAccount?: CognitiveServicesAccount;
+  /**
+   * Definition of additional projections to azure blob, table, or files, of enriched data.
+   */
+  knowledgeStore?: SearchIndexerKnowledgeStore;
   /**
    * The ETag of the skillset.
    */
@@ -1772,7 +1796,7 @@ export interface SearchIndexerDataSourceConnection {
   description?: string;
   /**
    * The type of the datasource. Possible values include: 'AzureSql', 'CosmosDb', 'AzureBlob',
-   * 'AzureTable', 'MySql'
+   * 'AzureTable', 'MySql', 'AdlsGen2'
    */
   type: SearchIndexerDataSourceType;
   /**

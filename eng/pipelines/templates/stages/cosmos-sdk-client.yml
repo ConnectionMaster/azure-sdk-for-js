@@ -18,11 +18,16 @@ parameters:
 stages:
   - stage: Build
     jobs:
-      - template: /eng/pipelines/templates/jobs/archetype-sdk-client.yml
+      - template: /eng/pipelines/templates/jobs/ci.yml
         parameters:
           Artifacts: ${{parameters.Artifacts}}
           ServiceDirectory: ${{ parameters.ServiceDirectory }}
           RunUnitTests: ${{ parameters.RunUnitTests }}
+          MatrixConfigs:
+          - Name: Javascript_ci_test_base
+            Path: eng/pipelines/templates/stages/platform-matrix.json
+            Selection: sparse
+            GenerateVMJobs: true
 
   - template: /eng/pipelines/templates/stages/archetype-sdk-tests.yml
     parameters:
@@ -30,7 +35,7 @@ stages:
       MatrixFilters:
         - TestType=node
         - DependencyVersion=^$
-        - NodeTestVersion=8.x
+        - NodeTestVersion=10.x
         - Pool=.*mms-win-2019.*
       PreSteps:
         - template: /eng/pipelines/templates/steps/cosmos-integration-public.yml
